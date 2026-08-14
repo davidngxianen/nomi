@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { getDays, hexA, TODAY_DOW, TODAY_INDEX } from '../data';
+import { checklistItems, getDays, hexA, TODAY_DOW, TODAY_INDEX, type ChecklistItem, type UserTags } from '../data';
 
 const LETTERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
@@ -9,10 +9,11 @@ interface TodayTabProps {
   accent: string;
   userName: string;
   viewed: Record<number, boolean>;
+  userTags: UserTags;
   onOpenStory: (idx: number) => void;
 }
 
-export default function TodayTab({ accent, userName, viewed, onOpenStory }: TodayTabProps) {
+export default function TodayTab({ accent, userName, viewed, userTags, onOpenStory }: TodayTabProps) {
   const days = getDays();
   const rootRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<SVGSVGElement>(null);
@@ -98,12 +99,198 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
       </div>
 
       <div className="gsap-stagger">
+        <ChecklistCard accent={accent} userTags={userTags} viewed={viewed} />
+      </div>
+
+      <div className="gsap-stagger">
         <div style={{ padding: '0 20px 8px', fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>When you check in</div>
         <CheckinChart days={days} />
       </div>
 
       <div className="gsap-stagger">
         <ObservationCard days={days} accent={accent} />
+      </div>
+    </div>
+  );
+}
+
+type ChecklistScope = 'day' | 'week';
+
+function ChecklistCard({ accent, userTags, viewed }: { accent: string; userTags: UserTags; viewed: Record<number, boolean> }) {
+  const [scope, setScope] = useState<ChecklistScope>('day');
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [customItems, setCustomItems] = useState<Record<ChecklistScope, ChecklistItem[]>>({ day: [], week: [] });
+  const [customInput, setCustomInput] = useState('');
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    try {
+      setChecked(JSON.parse(localStorage.getItem('nomi.checklist') || '{}'));
+      const saved = JSON.parse(localStorage.getItem('nomi.checklist.custom') || 'null');
+      if (saved) setCustomItems(saved);
+    } catch {
+      // ignore corrupt local storage
+    }
+  }, []);
+
+  const items = [...checklistItems(scope, userTags, viewed), ...customItems[scope]];
+
+  const toggle = (id: string) => {
+    setChecked((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem('nomi.checklist', JSON.stringify(next));
+      } catch {
+        // storage unavailable
+      }
+      if (next[id]) {
+        const el = itemRefs.current[id];
+        if (el) gsap.fromTo(el, { scale: 0.7 }, { scale: 1, duration: 0.35, ease: 'back.out(3)' });
+      }
+      return next;
+    });
+  };
+
+  const persistCustom = (next: Record<ChecklistScope, ChecklistItem[]>) => {
+    setCustomItems(next);
+    try {
+      localStorage.setItem('nomi.checklist.custom', JSON.stringify(next));
+    } catch {
+      // storage unavailable
+    }
+  };
+
+  const addCustom = () => {
+    const label = customInput.trim();
+    if (!label) return;
+    persistCustom({ ...customItems, [scope]: [...customItems[scope], { id: `custom-${Date.now()}`, label }] });
+    setCustomInput('');
+  };
+
+  const removeCustom = (id: string) => {
+    persistCustom({ ...customItems, [scope]: customItems[scope].filter((it) => it.id !== id) });
+  };
+
+  return (
+    <div style={{ margin: '0 20px 26px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>Checklist</div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {(['day', 'week'] as ChecklistScope[]).map((s) => (
+            <div
+              key={s}
+              onClick={() => setScope(s)}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 12,
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                background: scope === s ? accent : 'rgba(255,255,255,0.09)',
+                color: scope === s ? '#141a10' : 'rgba(255,255,255,0.65)',
+              }}
+            >
+              {s}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ borderRadius: 22, background: 'rgba(6,18,16,0.78)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', boxShadow: '0 12px 28px rgba(0,0,0,0.28)', padding: '6px 18px' }}>
+        {items.map((item, i) => {
+          const isChecked = !!checked[item.id];
+          return (
+            <div
+              key={item.id}
+              onClick={() => toggle(item.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '14px 0',
+                borderTop: i === 0 ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                ref={(el) => {
+                  itemRefs.current[item.id] = el;
+                }}
+                style={{
+                  flexShrink: 0,
+                  width: 22,
+                  height: 22,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: isChecked ? accent : 'transparent',
+                  border: `2px solid ${isChecked ? accent : 'rgba(255,255,255,0.35)'}`,
+                }}
+              >
+                {isChecked && (
+                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                    <path d="M1 4.5L4 7.5L10 1.5" stroke="#141a10" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {item.day && (
+                <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 700, color: accent, letterSpacing: 0.5, width: 20 }}>{item.day}</span>
+              )}
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: 13.5,
+                  lineHeight: 1.4,
+                  color: isChecked ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.85)',
+                  textDecoration: isChecked ? 'line-through' : 'none',
+                }}
+              >
+                {item.label}
+              </span>
+              {item.id.startsWith('custom-') && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeCustom(item.id);
+                  }}
+                  style={{ flexShrink: 0, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M1 1l8 8M9 1L1 9" stroke="rgba(255,255,255,0.4)" strokeWidth={1.4} strokeLinecap="round" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        <div style={{ display: 'flex', gap: 8, padding: '14px 0 10px', borderTop: items.length ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+          <input
+            style={{
+              flex: 1,
+              padding: '10px 13px',
+              borderRadius: 11,
+              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'rgba(255,255,255,0.08)',
+              color: '#fff',
+              fontSize: 16,
+              fontFamily: "'Manrope',system-ui,sans-serif",
+              outline: 'none',
+            }}
+            placeholder="Add your own…"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCustom()}
+          />
+          <div
+            onClick={addCustom}
+            style={{ padding: '10px 15px', borderRadius: 11, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }}
+          >
+            Add
+          </div>
+        </div>
       </div>
     </div>
   );

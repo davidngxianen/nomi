@@ -142,7 +142,7 @@ export default function App() {
         >
           <Header appName={APP_NAME} userInitial={userInitial} opacity={headerOpacity} />
 
-          {tab === 'today' && <TodayTab accent={ACCENT} userName={USER_NAME} viewed={viewed} onOpenStory={openStory} />}
+          {tab === 'today' && <TodayTab accent={ACCENT} userName={USER_NAME} viewed={viewed} userTags={userTags} onOpenStory={openStory} />}
           {tab === 'vitals' && (
             <VitalsTab
               accent={ACCENT}

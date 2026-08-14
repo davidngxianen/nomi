@@ -163,3 +163,55 @@ export function tagWhyLine(tag: string): string | undefined {
   const line = TAG_WHY[tag];
   return line ? `${tag.toLowerCase()} — ${line}` : undefined;
 }
+
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  day?: string;
+}
+
+const CHECKLIST_NUDGES = [
+  'Get a few minutes of morning light',
+  'Drink a glass of water before your first coffee',
+  'Step outside for a short walk',
+  'Stretch for two minutes before bed',
+];
+
+const NON_ACTIONABLE_PREFIXES = ['Nothing to fix. ', 'Nothing needed — ', 'Nothing needed - '];
+
+function shortenAction(text: string, max = 110): string {
+  let cleaned = text;
+  for (const prefix of NON_ACTIONABLE_PREFIXES) {
+    if (cleaned.startsWith(prefix)) cleaned = cleaned.slice(prefix.length);
+  }
+  return cleaned.length > max ? cleaned.slice(0, max - 1).trimEnd() + '…' : cleaned;
+}
+
+// checklist suggestions, scoped to today or the current week so far
+export function checklistItems(scope: 'day' | 'week', userTags: UserTags, viewed: Record<number, boolean>): ChecklistItem[] {
+  if (scope === 'day') {
+    const items: ChecklistItem[] = [{ id: `day-${TODAY_INDEX}-action`, label: shortenAction(narrative(TODAY_INDEX).action) }];
+    if (allTags(userTags, TODAY_INDEX).length === 0) {
+      items.push({ id: `day-${TODAY_INDEX}-tag`, label: 'Add a tag for today' });
+    }
+    if (!viewed[TODAY_INDEX]) {
+      items.push({ id: `day-${TODAY_INDEX}-story`, label: "Open today's 60-second summary" });
+    }
+    items.push({ id: `day-${TODAY_INDEX}-nudge`, label: CHECKLIST_NUDGES[TODAY_INDEX % CHECKLIST_NUDGES.length] });
+    return items;
+  }
+
+  // consolidate this week's daily actions into a deduplicated list — no per-day breakdown
+  const weekStart = TODAY_INDEX - (TODAY_DOW - 1);
+  const seen = new Map<string, number>();
+  for (let idx = weekStart; idx <= TODAY_INDEX; idx++) {
+    const label = shortenAction(narrative(idx).action);
+    if (!seen.has(label)) seen.set(label, idx);
+  }
+  const items: ChecklistItem[] = Array.from(seen, ([label, idx]) => ({ id: `week-${idx}-action`, label }));
+  const weekTagCount = Array.from({ length: TODAY_INDEX - weekStart + 1 }, (_, k) => weekStart + k).filter((idx) => allTags(userTags, idx).length > 0).length;
+  if (weekTagCount < TODAY_INDEX - weekStart + 1) {
+    items.push({ id: `week-${weekStart}-tag`, label: 'Tag any untagged days from this week' });
+  }
+  return items;
+}
