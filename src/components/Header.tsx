@@ -13,7 +13,7 @@ export default function Header({ appName, userInitial }: HeaderProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '58px 20px 20px',
+        padding: '34px 20px 20px',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
       }}

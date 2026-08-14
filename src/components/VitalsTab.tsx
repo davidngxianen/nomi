@@ -105,11 +105,15 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
-            style={{ flex: 1, padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 13.5, fontFamily: "'Manrope',system-ui,sans-serif", outline: 'none' }}
+            style={{ flex: 1, padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 16, fontFamily: "'Manrope',system-ui,sans-serif", outline: 'none' }}
             placeholder="Add your own…"
             value={customTag}
             onChange={(e) => onCustomTagChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddCustomTag()}
+            onFocus={(e) => {
+              const el = e.currentTarget;
+              setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+            }}
           />
           <div style={{ padding: '11px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }} onClick={onAddCustomTag}>
             Add

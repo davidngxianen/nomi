@@ -41,12 +41,12 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
         </div>
       </div>
 
-      <div style={{ padding: '0 20px', marginBottom: 26 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ marginBottom: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, padding: '0 20px' }}>
           <div style={{ fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>This week's summaries</div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>tap a day to replay</div>
         </div>
-        <div style={{ display: 'flex', gap: 9 }}>
+        <div className="scroll-area" style={{ display: 'flex', gap: 9, overflowX: 'auto', touchAction: 'pan-x', padding: '0 20px' }}>
           {LETTERS.map((label, dow) => {
             const idx = TODAY_INDEX - (TODAY_DOW - 1) + dow; // Mon..Sun of current week
             const isFuture = idx > TODAY_INDEX;
@@ -75,7 +75,7 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
               <div
                 key={dow}
                 onClick={isFuture ? undefined : () => onOpenStory(idx)}
-                style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: 3, borderRadius: '50%' }}
+                style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: 3, borderRadius: '50%' }}
               >
                 <div style={circleStyle}>{label}</div>
               </div>
