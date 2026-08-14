@@ -120,8 +120,8 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
     if (pointsRef.current) {
       gsap.fromTo(
         pointsRef.current.children,
-        { scale: 0, transformOrigin: '50% 50%' },
-        { scale: 1, duration: 0.4, ease: 'back.out(2)', stagger: 0.02, delay: 0.3 }
+        { attr: { r: 0 } },
+        { attr: { r: (_i: number, target: Element) => Number(target.getAttribute('data-r')) }, duration: 0.4, ease: 'back.out(1.7)', stagger: 0.02, delay: 0.3 }
       );
     }
   }, [linePath]);
@@ -191,7 +191,7 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
           <path ref={lineRef} d={linePath} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" />
           <g ref={pointsRef}>
             {chartPts.map((pt) => (
-              <circle key={pt.i} cx={pt.x} cy={pt.y} r={pt.r} fill={pt.fill} stroke={pt.stroke} strokeWidth={2} style={{ cursor: 'pointer' }} onClick={() => onSelectDay(pt.i)} />
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={pt.r} data-r={pt.r} fill={pt.fill} stroke={pt.stroke} strokeWidth={2} style={{ cursor: 'pointer' }} onClick={() => onSelectDay(pt.i)} />
             ))}
           </g>
         </svg>
