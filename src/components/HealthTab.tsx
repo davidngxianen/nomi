@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { allTags, fmtDate, getDays, hexA, narrative, tagWhyLine, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle } from '../theme';
 import TagChips from './TagChips';
@@ -95,14 +97,67 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
   ];
   const selHasStory = sd.i > 82;
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<SVGPathElement>(null);
+  const areaRef = useRef<SVGPathElement>(null);
+  const pointsRef = useRef<SVGGElement>(null);
+  const statRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-stagger', { opacity: 0, y: 22, duration: 0.55, ease: 'power2.out', stagger: 0.09 });
+    }, rootRef);
+    return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    const path = lineRef.current;
+    if (!path) return;
+    const length = path.getTotalLength();
+    gsap.set(path, { strokeDasharray: length, strokeDashoffset: length });
+    gsap.to(path, { strokeDashoffset: 0, duration: 0.9, ease: 'power2.out' });
+    if (areaRef.current) gsap.fromTo(areaRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9, delay: 0.2 });
+    if (pointsRef.current) {
+      gsap.fromTo(
+        pointsRef.current.children,
+        { scale: 0, transformOrigin: '50% 50%' },
+        { scale: 1, duration: 0.4, ease: 'back.out(2)', stagger: 0.02, delay: 0.3 }
+      );
+    }
+  }, [linePath]);
+
+  useEffect(() => {
+    selStats.forEach((s, i) => {
+      const el = statRefs.current[i];
+      if (!el) return;
+      const match = s.value.match(/^(-?\d+(?:\.\d+)?)(.*)$/);
+      if (!match) {
+        el.textContent = s.value;
+        return;
+      }
+      const target = parseFloat(match[1]);
+      const suffix = match[2] || '';
+      const counter = { v: 0 };
+      gsap.to(counter, {
+        v: target,
+        duration: 0.8,
+        ease: 'power2.out',
+        onUpdate: () => {
+          el.textContent = `${Math.round(counter.v)}${suffix}`;
+        },
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sd.i]);
+
   return (
-    <div style={{ padding: '0 20px' }}>
-      <div style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>My Health</div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 18 }}>
+    <div ref={rootRef} style={{ padding: '0 20px' }}>
+      <div className="gsap-stagger" style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>My Health</div>
+      <div className="gsap-stagger" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 18 }}>
         Three months of mornings. Tap any point to see that day's story.
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div className="gsap-stagger" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         {METRIC_BTNS.map(([k, label]) => (
           <div
             key={k}
@@ -124,7 +179,7 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
         ))}
       </div>
 
-      <div style={{ borderRadius: 24, background: 'rgba(8,20,18,0.72)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', padding: '20px 12px 10px', marginBottom: 16 }}>
+      <div className="gsap-stagger" style={{ borderRadius: 24, background: 'rgba(8,20,18,0.72)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', padding: '20px 12px 10px', marginBottom: 16 }}>
         <svg width="100%" height="180" viewBox="0 0 352 180" style={{ display: 'block' }}>
           <defs>
             <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
@@ -132,11 +187,13 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
               <stop offset="100%" stopColor={accent} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <path d={areaPath} fill="url(#ridge)" />
-          <path d={linePath} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" />
-          {chartPts.map((pt) => (
-            <circle key={pt.i} cx={pt.x} cy={pt.y} r={pt.r} fill={pt.fill} stroke={pt.stroke} strokeWidth={2} style={{ cursor: 'pointer' }} onClick={() => onSelectDay(pt.i)} />
-          ))}
+          <path ref={areaRef} d={areaPath} fill="url(#ridge)" />
+          <path ref={lineRef} d={linePath} fill="none" stroke={accent} strokeWidth={2} strokeLinejoin="round" />
+          <g ref={pointsRef}>
+            {chartPts.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={pt.r} fill={pt.fill} stroke={pt.stroke} strokeWidth={2} style={{ cursor: 'pointer' }} onClick={() => onSelectDay(pt.i)} />
+            ))}
+          </g>
         </svg>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 10px 8px' }}>
           <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>{xStart}</span>
@@ -145,11 +202,11 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
         </div>
       </div>
 
-      <div style={{ margin: '0 0 8px', padding: '16px 18px', borderRadius: 18, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+      <div className="gsap-stagger" style={{ margin: '0 0 8px', padding: '16px 18px', borderRadius: 18, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(15,25,25,0.85)', fontWeight: 600 }}>{trendGlance}</div>
       </div>
 
-      <div style={cardStyle}>
+      <div className="gsap-stagger" style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{fmtDate(sd.date, true)}</div>
           {selHasStory && (
@@ -159,9 +216,16 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
           )}
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-          {selStats.map((s) => (
+          {selStats.map((s, i) => (
             <div key={s.label} style={{ flex: 1, padding: '12px 10px', borderRadius: 14, background: 'rgba(255,255,255,0.07)', textAlign: 'center' }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 2 }}>{s.value}</div>
+              <div
+                ref={(el) => {
+                  statRefs.current[i] = el;
+                }}
+                style={{ fontSize: 17, fontWeight: 800, color: '#fff', marginBottom: 2 }}
+              >
+                {s.value}
+              </div>
               <div style={{ fontSize: 10, letterSpacing: 0.5, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>{s.label}</div>
             </div>
           ))}

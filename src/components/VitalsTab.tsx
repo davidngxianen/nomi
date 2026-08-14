@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle, cardStyleClickable } from '../theme';
 import TagChips from './TagChips';
@@ -76,26 +78,36 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
     ],
   ];
 
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-stagger', { opacity: 0, y: 22, duration: 0.55, ease: 'power2.out', stagger: 0.09 });
+    }, rootRef);
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <div style={{ padding: '0 20px' }}>
-      <div style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>Vitals</div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>
+    <div ref={rootRef} style={{ padding: '0 20px' }}>
+      <div className="gsap-stagger" style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>Vitals</div>
+      <div className="gsap-stagger" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>
         Today, in plain language — and one thing to do about each.
       </div>
 
       {cfgs.map(([shortKey, cfg]) => (
-        <VitalCard
-          key={shortKey}
-          cfg={cfg}
-          today={today}
-          last14={last14}
-          accent={accent}
-          expanded={expanded === shortKey}
-          onToggle={() => onToggleExpand(shortKey)}
-        />
+        <div className="gsap-stagger" key={shortKey}>
+          <VitalCard
+            cfg={cfg}
+            today={today}
+            last14={last14}
+            accent={accent}
+            expanded={expanded === shortKey}
+            onToggle={() => onToggleExpand(shortKey)}
+          />
+        </div>
       ))}
 
-      <div style={cardStyle}>
+      <div className="gsap-stagger" style={cardStyle}>
         <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 6 }}>Tag today</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)', marginBottom: 16 }}>
           What did today look like? Tags teach the app what moves your numbers — future summaries get sharper.
@@ -146,6 +158,31 @@ function VitalCard({
     return { hpx, color: isLast ? accent : hexA(accent, 0.22 + t * 0.3) };
   });
 
+  const dotRef = useRef<HTMLDivElement>(null);
+  const valueRef = useRef<HTMLSpanElement>(null);
+  const barsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    gsap.fromTo(dotRef.current, { left: '0%' }, { left: `${pct}%`, duration: 1, ease: 'power3.out', delay: 0.15 });
+    const counter = { v: 0 };
+    gsap.to(counter, {
+      v: val,
+      duration: 1,
+      ease: 'power2.out',
+      delay: 0.1,
+      onUpdate: () => {
+        if (valueRef.current) valueRef.current.textContent = cfg.fmt(Math.round(counter.v));
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [val, pct]);
+
+  useEffect(() => {
+    if (expanded && barsRef.current) {
+      gsap.from(barsRef.current.children, { height: 0, duration: 0.5, ease: 'power2.out', stagger: 0.02 });
+    }
+  }, [expanded]);
+
   return (
     <div style={cardStyleClickable} onClick={onToggle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -154,7 +191,7 @@ function VitalCard({
           <div style={{ fontSize: 18, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{cfg.headline(val)}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0, marginLeft: 14 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{cfg.fmt(val)}</span>
+          <span ref={valueRef} style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{cfg.fmt(val)}</span>
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{cfg.unit}</span>
         </div>
       </div>
@@ -163,7 +200,7 @@ function VitalCard({
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.14)', borderRadius: '4px 0 0 4px' }} />
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.24)', margin: '0 2px' }} />
           <div style={{ flex: 1, background: hexA(accent, 0.45), borderRadius: '0 4px 4px 0' }} />
-          <div style={{ position: 'absolute', top: -4, left: `calc(${pct}% - 8px)`, width: 16, height: 16, borderRadius: '50%', background: accent, border: '3px solid rgba(8,20,18,0.9)', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }} />
+          <div ref={dotRef} style={{ position: 'absolute', top: -4, left: `${pct}%`, transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: '50%', background: accent, border: '3px solid rgba(8,20,18,0.9)', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
           {cfg.zones.map((z, i) => (
@@ -175,7 +212,7 @@ function VitalCard({
       </div>
       {expanded && (
         <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.12)', animation: 'storyIn .3s ease' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 52, marginBottom: 14 }}>
+          <div ref={barsRef} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 52, marginBottom: 14 }}>
             {bars.map((b, i) => (
               <div key={i} style={{ flex: 1, height: b.hpx, borderRadius: 3, background: b.color }} />
             ))}

@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
+import gsap from 'gsap';
 import { getDays, hexA, TODAY_DOW, TODAY_INDEX } from '../data';
 
 const LETTERS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -12,10 +14,21 @@ interface TodayTabProps {
 
 export default function TodayTab({ accent, userName, viewed, onOpenStory }: TodayTabProps) {
   const days = getDays();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const arrowRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-stagger', { opacity: 0, y: 22, duration: 0.55, ease: 'power2.out', stagger: 0.09 });
+      gsap.to(arrowRef.current, { x: 4, duration: 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 0.6 });
+    }, rootRef);
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <>
+    <div ref={rootRef}>
       <div
+        className="gsap-stagger"
         onClick={() => onOpenStory(TODAY_INDEX)}
         style={{
           margin: '0 20px 26px',
@@ -35,13 +48,13 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12.5, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>Tap to open</span>
-          <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+          <svg ref={arrowRef} width="14" height="12" viewBox="0 0 14 12" fill="none">
             <path d="M1 6h11M8 1l5 5-5 5" stroke="rgba(255,255,255,0.62)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </div>
 
-      <div style={{ marginBottom: 26 }}>
+      <div className="gsap-stagger" style={{ marginBottom: 26 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, padding: '0 20px' }}>
           <div style={{ fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>This week's summaries</div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 600 }}>tap a day to replay</div>
@@ -84,11 +97,15 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
         </div>
       </div>
 
-      <div style={{ padding: '0 20px 8px', fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>When you check in</div>
-      <CheckinChart days={days} />
+      <div className="gsap-stagger">
+        <div style={{ padding: '0 20px 8px', fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>When you check in</div>
+        <CheckinChart days={days} />
+      </div>
 
-      <ObservationCard days={days} accent={accent} />
-    </>
+      <div className="gsap-stagger">
+        <ObservationCard days={days} accent={accent} />
+      </div>
+    </div>
   );
 }
 
