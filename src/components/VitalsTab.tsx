@@ -110,10 +110,6 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
             value={customTag}
             onChange={(e) => onCustomTagChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddCustomTag()}
-            onFocus={(e) => {
-              const el = e.currentTarget;
-              setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-            }}
           />
           <div style={{ padding: '11px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }} onClick={onAddCustomTag}>
             Add
