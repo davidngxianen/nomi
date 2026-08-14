@@ -1,9 +1,10 @@
 interface HeaderProps {
   appName: string;
   userInitial: string;
+  opacity: number;
 }
 
-export default function Header({ appName, userInitial }: HeaderProps) {
+export default function Header({ appName, userInitial, opacity }: HeaderProps) {
   return (
     <div
       style={{
@@ -16,6 +17,9 @@ export default function Header({ appName, userInitial }: HeaderProps) {
         padding: '34px 20px 20px',
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
+        opacity,
+        pointerEvents: opacity < 0.15 ? 'none' : 'auto',
+        transition: 'opacity 0.15s linear',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20 }}>

@@ -21,11 +21,24 @@ export default function App() {
   const [expanded, setExpanded] = useState<VitalKey | null>(null);
   const [customTag, setCustomTag] = useState('');
   const [userTags, setUserTags] = useState<UserTags>({});
+  const [headerOpacity, setHeaderOpacity] = useState(1);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fadeTicking = useRef(false);
 
   const changeTab = (next: Tab) => {
     setTab(next);
     scrollRef.current?.scrollTo({ top: 0 });
+    setHeaderOpacity(1);
+  };
+
+  const onScroll = () => {
+    if (fadeTicking.current) return;
+    fadeTicking.current = true;
+    requestAnimationFrame(() => {
+      const top = scrollRef.current?.scrollTop ?? 0;
+      setHeaderOpacity(Math.max(0, 1 - top / 70));
+      fadeTicking.current = false;
+    });
   };
 
   useEffect(() => {
@@ -124,9 +137,10 @@ export default function App() {
         <div
           ref={scrollRef}
           className="scroll-area"
+          onScroll={onScroll}
           style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'none', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
         >
-          <Header appName={APP_NAME} userInitial={userInitial} />
+          <Header appName={APP_NAME} userInitial={userInitial} opacity={headerOpacity} />
 
           {tab === 'today' && <TodayTab accent={ACCENT} userName={USER_NAME} viewed={viewed} onOpenStory={openStory} />}
           {tab === 'vitals' && (
