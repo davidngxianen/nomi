@@ -1,9 +1,110 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { fmtDate, getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
+import { allTags, fmtDate, getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle, cardStyleClickable } from '../theme';
 import TagChips from './TagChips';
+
+interface TagCorrelation {
+  tag: string;
+  n: number;
+  hrvDelta: number;
+  rhrDelta: number;
+  consDelta: number;
+}
+
+function computeTagCorrelations(tags: string[], userTags: UserTags): TagCorrelation[] {
+  const allDays = getDays();
+  const overallHrv = allDays.reduce((a, d) => a + d.hrv, 0) / allDays.length;
+  const overallRhr = allDays.reduce((a, d) => a + d.rhr, 0) / allDays.length;
+  const overallCons = allDays.reduce((a, d) => a + d.cons, 0) / allDays.length;
+
+  return tags.map((tag) => {
+    const withTag = allDays.filter((d) => allTags(userTags, d.i).includes(tag));
+    const n = withTag.length;
+    if (n === 0) return { tag, n, hrvDelta: 0, rhrDelta: 0, consDelta: 0 };
+    const avgHrv = withTag.reduce((a, d) => a + d.hrv, 0) / n;
+    const avgRhr = withTag.reduce((a, d) => a + d.rhr, 0) / n;
+    const avgCons = withTag.reduce((a, d) => a + d.cons, 0) / n;
+    return {
+      tag,
+      n,
+      hrvDelta: avgHrv - overallHrv,
+      rhrDelta: avgRhr - overallRhr,
+      consDelta: avgCons - overallCons,
+    };
+  });
+}
+
+interface MergedCorrelation {
+  hrvDelta: number;
+  rhrDelta: number;
+  consDelta: number;
+  n: number;
+}
+
+// combine multiple tags' correlations into one weighted-average signal, so picking several
+// tags produces one merged read instead of a separate block per tag
+function mergeCorrelations(cors: TagCorrelation[]): MergedCorrelation {
+  const withData = cors.filter((c) => c.n > 0);
+  const n = withData.reduce((a, c) => a + c.n, 0);
+  if (n === 0) return { hrvDelta: 0, rhrDelta: 0, consDelta: 0, n: 0 };
+  return {
+    hrvDelta: withData.reduce((a, c) => a + c.hrvDelta * c.n, 0) / n,
+    rhrDelta: withData.reduce((a, c) => a + c.rhrDelta * c.n, 0) / n,
+    consDelta: withData.reduce((a, c) => a + c.consDelta * c.n, 0) / n,
+    n,
+  };
+}
+
+// tags where doing more of the thing is generally the goal
+const POSITIVE_TAGS = ['Run', 'Strength', 'Meditation', 'Early night'];
+// tags that describe a cost or a habit worth moderating, regardless of how the numbers land
+const NEGATIVE_TAGS = ['Late meal', 'Coffee after 3pm', 'Alcohol', 'Stressful day', 'Social evening'];
+
+type Polarity = 'positive' | 'negative' | 'neutral' | 'mixed';
+
+function tagPolarity(tag: string): 'positive' | 'negative' | 'neutral' {
+  if (POSITIVE_TAGS.includes(tag)) return 'positive';
+  if (NEGATIVE_TAGS.includes(tag)) return 'negative';
+  return 'neutral';
+}
+
+function mergedPolarity(tags: string[]): Polarity {
+  const polarities = new Set(tags.map(tagPolarity).filter((p) => p !== 'neutral'));
+  if (polarities.size === 0) return 'neutral';
+  if (polarities.size > 1) return 'mixed';
+  return [...polarities][0];
+}
+
+// what "favorable" means for each metric is fixed by physiology (higher HRV, lower RHR,
+// steadier sleep), but whether that's advice to lean in or pull back depends on what the
+// tag actually is — a tag named "Stressful day" shouldn't get "keep this up" just because
+// one small sample happened to look fine
+function correlationAdvice(c: MergedCorrelation, polarity: Polarity): string {
+  if (c.n === 0) return 'Not enough tagged mornings yet to say anything useful. Keep tagging and check back in a week or two.';
+
+  const goodCount = [c.hrvDelta > 0.5, c.rhrDelta < -0.3, c.consDelta > 1].filter(Boolean).length;
+  const badCount = [c.hrvDelta < -0.5, c.rhrDelta > 0.3, c.consDelta < -1].filter(Boolean).length;
+  const numericScore = goodCount - badCount;
+
+  if (polarity === 'mixed') {
+    return "This combination mixes habits you'd usually want more of with ones worth moderating, so the read is muddy. Try tagging them separately to see which one is actually driving your numbers.";
+  }
+  if (polarity === 'positive') {
+    return numericScore >= 0
+      ? 'Worth keeping up. Mornings tagged like this tend to bring better recovery, so lean on this, especially before a demanding day.'
+      : "Your recovery looks a touch softer around this than usual. Nothing alarming, but pace yourself and watch how the next few mornings land before pushing harder.";
+  }
+  if (polarity === 'negative') {
+    return numericScore <= 0
+      ? "Worth dialing back when you can. This tends to leave your body working harder the next morning, so pair it with an easier day or an earlier bedtime when you can't avoid it."
+      : "Your numbers haven't shown much cost from this yet, but it's still generally worth keeping in moderation rather than leaning on it.";
+  }
+  if (numericScore >= 2) return 'Worth keeping an eye on. Your recovery tends to look better on mornings tagged like this.';
+  if (numericScore <= -2) return 'Worth keeping an eye on. Your recovery tends to look a little more taxed on mornings tagged like this.';
+  return 'No clear signal yet either way. Keep tagging this and check back in a couple of weeks before changing anything.';
+}
 
 type VitalKey = 'hrv' | 'rhr' | 'sleep';
 
@@ -94,6 +195,9 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
   ];
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const computeBarRef = useRef<HTMLDivElement>(null);
+  const [computeState, setComputeState] = useState<'idle' | 'computing' | 'done'>('idle');
+  const [correlations, setCorrelations] = useState<TagCorrelation[]>([]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -101,6 +205,26 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
     }, rootRef);
     return () => ctx.revert();
   }, []);
+
+  useEffect(() => {
+    setComputeState('idle');
+    setCorrelations([]);
+  }, [selDay]);
+
+  const selectedTags = allTags(userTags, selDay);
+  const canCompute = selectedTags.length > 0 && computeState !== 'computing';
+
+  const runCompute = () => {
+    if (!canCompute) return;
+    setComputeState('computing');
+    if (computeBarRef.current) {
+      gsap.fromTo(computeBarRef.current, { width: '0%' }, { width: '100%', duration: 1.6, ease: 'power1.inOut' });
+    }
+    setTimeout(() => {
+      setCorrelations(computeTagCorrelations(selectedTags, userTags));
+      setComputeState('done');
+    }, 1600);
+  };
 
   return (
     <div ref={rootRef} style={{ padding: '0 20px' }}>
@@ -150,6 +274,47 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
             Add
           </div>
         </div>
+
+        <div
+          onClick={runCompute}
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            marginTop: 12,
+            padding: '12px',
+            borderRadius: 12,
+            textAlign: 'center',
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: canCompute ? 'pointer' : 'default',
+            opacity: selectedTags.length === 0 ? 0.4 : 1,
+            background: selectedTags.length > 0 && computeState !== 'computing' ? accent : 'rgba(255,255,255,0.09)',
+            color: selectedTags.length > 0 && computeState !== 'computing' ? '#141a10' : 'rgba(255,255,255,0.6)',
+            transition: 'opacity .2s, background .2s, color .2s',
+          }}
+        >
+          {computeState === 'computing' && <div ref={computeBarRef} style={{ position: 'absolute', inset: 0, background: hexA(accent, 0.4) }} />}
+          <span style={{ position: 'relative' }}>{computeState === 'computing' ? 'Computing…' : 'Compute'}</span>
+        </div>
+
+        {computeState === 'computing' && (
+          <div style={{ marginTop: 14, fontSize: 12, lineHeight: 1.5, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic' }}>
+            Running a correlation pass across your tagged mornings…
+          </div>
+        )}
+
+        {computeState === 'done' && (
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)', animation: 'storyIn .3s ease' }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: 10 }}>Pattern analysis</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.8)', marginBottom: 12 }}>
+              {correlationAdvice(mergeCorrelations(correlations), mergedPolarity(correlations.map((c) => c.tag)))}
+            </div>
+            <div style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+              A simple pattern compared to your overall baseline, not proof that one causes the other.
+            </div>
+          </div>
+        )}
+
         <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.5)' }}>
           Your tags are already paying off: mornings after "Meditation" average a higher HRV than your usual, and "Late meal" evenings tend to show up as a warmer resting heart rate. The more you tag, the more specific these reads get.
         </div>

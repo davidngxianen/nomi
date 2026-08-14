@@ -296,30 +296,63 @@ function ChecklistCard({ accent, userTags, viewed }: { accent: string; userTags:
   );
 }
 
+const COL_LEFT = (c: number) => 20 + (c / 6) * 72;
+
+function SunIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="3" stroke="rgba(20,30,30,0.55)" strokeWidth={1.4} />
+      <g stroke="rgba(20,30,30,0.55)" strokeWidth={1.4} strokeLinecap="round">
+        <path d="M7 0.5v1.6M7 11.9v1.6M13.5 7h-1.6M2.1 7H0.5M11.6 2.4l-1.1 1.1M3.5 10.5l-1.1 1.1M11.6 11.6l-1.1-1.1M3.5 3.5l-1.1-1.1" />
+      </g>
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M12.5 8.6A5.5 5.5 0 1 1 5.4 1.5a4.4 4.4 0 0 0 7.1 7.1z" fill="rgba(20,30,30,0.55)" />
+    </svg>
+  );
+}
+
 function CheckinChart({ days }: { days: ReturnType<typeof getDays> }) {
   const dots: { left: number; top: number }[] = [];
   for (let c = 0; c < 7; c++) {
     const idx = 83 + c;
     days[idx].checkins.forEach((h) => {
-      const left = 20 + (c / 6) * 72;
-      const top = 10 + ((h - 6) / 16) * 70;
-      dots.push({ left, top });
+      dots.push({ left: COL_LEFT(c), top: 10 + ((h - 6) / 16) * 70 });
     });
   }
   return (
     <div style={{ margin: '0 20px 14px', borderRadius: 26, position: 'relative', height: 230, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 14, left: 16, fontSize: 11, color: 'rgba(20,30,30,0.5)', fontWeight: 700 }}>morning</div>
-      <div style={{ position: 'absolute', bottom: 32, left: 16, fontSize: 11, color: 'rgba(20,30,30,0.5)', fontWeight: 700 }}>evening</div>
+      <div style={{ position: 'absolute', top: 14, left: 16 }}>
+        <SunIcon />
+      </div>
+      <div style={{ position: 'absolute', bottom: 32, left: 16 }}>
+        <MoonIcon />
+      </div>
       {dots.map((dot, i) => (
         <div key={i} style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: 'rgba(20,32,30,0.6)', left: `calc(${dot.left}% - 5px)`, top: `${dot.top}%` }} />
       ))}
-      <div style={{ position: 'absolute', bottom: 10, left: 70, right: 16, display: 'flex', justifyContent: 'space-between' }}>
-        {LETTERS.map((l) => (
-          <span key={l} style={{ fontSize: 11, color: 'rgba(20,30,30,0.55)', fontWeight: 700, width: 20, textAlign: 'center' }}>
-            {l}
-          </span>
-        ))}
-      </div>
+      {LETTERS.map((l, c) => (
+        <span
+          key={l}
+          style={{
+            position: 'absolute',
+            bottom: 10,
+            left: `${COL_LEFT(c)}%`,
+            transform: 'translateX(-50%)',
+            fontSize: 11,
+            color: 'rgba(20,30,30,0.55)',
+            fontWeight: 700,
+            textAlign: 'center',
+          }}
+        >
+          {l}
+        </span>
+      ))}
     </div>
   );
 }

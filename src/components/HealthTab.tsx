@@ -152,7 +152,7 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
 
   return (
     <div ref={rootRef} style={{ padding: '0 20px' }}>
-      <div className="gsap-stagger" style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>My Health</div>
+      <div className="gsap-stagger" style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>Health</div>
       <div className="gsap-stagger" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 18 }}>
         Three months of mornings. Tap any point to see that day's story.
       </div>

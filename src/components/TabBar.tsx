@@ -6,7 +6,7 @@ export type Tab = 'today' | 'vitals' | 'health';
 const TABS: [Tab, string][] = [
   ['today', 'Today'],
   ['vitals', 'Vitals'],
-  ['health', 'My Health'],
+  ['health', 'Health'],
 ];
 
 interface TabBarProps {

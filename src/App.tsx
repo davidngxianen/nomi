@@ -140,8 +140,9 @@ export default function App() {
             position: 'absolute',
             inset: 0,
             backgroundImage: `url(${import.meta.env.BASE_URL}day.svg)`,
-            backgroundSize: 'cover',
+            backgroundSize: '175% auto',
             backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
             zIndex: 0,
           }}
         />
