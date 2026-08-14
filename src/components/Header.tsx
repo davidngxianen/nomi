@@ -5,7 +5,20 @@ interface HeaderProps {
 
 export default function Header({ appName, userInitial }: HeaderProps) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '58px 20px 20px' }}>
+    <div
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 5,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '58px 20px 20px',
+        background: 'linear-gradient(180deg, rgba(4,10,10,0.75) 0%, rgba(4,10,10,0.45) 70%, rgba(4,10,10,0) 100%)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+      }}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20 }}>
         <div style={{ height: 2, background: '#fff', borderRadius: 2 }} />
         <div style={{ height: 2, background: '#fff', borderRadius: 2 }} />

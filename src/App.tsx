@@ -96,7 +96,18 @@ export default function App() {
           style={{
             position: 'absolute',
             inset: 0,
+            backgroundImage: `url(${import.meta.env.BASE_URL}day.svg)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            zIndex: 0,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
             background: 'linear-gradient(150deg, #1c4c52 0%, #0f3138 32%, #0a2229 58%, #061417 100%)',
+            opacity: 0.32,
             zIndex: 0,
           }}
         />
@@ -105,12 +116,16 @@ export default function App() {
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(180deg, rgba(8,35,48,0.18) 0%, rgba(8,35,48,0.05) 30%, rgba(4,10,10,0.6) 74%, rgba(3,6,6,0.9) 100%)',
+              'linear-gradient(180deg, rgba(8,35,48,0.1) 0%, rgba(8,35,48,0.02) 30%, rgba(4,10,10,0.4) 74%, rgba(3,6,6,0.7) 100%)',
             zIndex: 0,
           }}
         />
 
-        <div ref={scrollRef} style={{ position: 'absolute', inset: 0, overflowY: 'auto', zIndex: 1, paddingBottom: 150 }}>
+        <div
+          ref={scrollRef}
+          className="scroll-area"
+          style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
+        >
           <Header appName={APP_NAME} userInitial={userInitial} />
 
           {tab === 'today' && <TodayTab accent={ACCENT} userName={USER_NAME} viewed={viewed} onOpenStory={openStory} />}

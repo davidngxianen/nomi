@@ -14,6 +14,17 @@
   font-family: 'Manrope', system-ui, sans-serif;
 }
 
+.scroll-area {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-area::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 @media (min-width: 560px) {
   .stage {
     padding: 48px 20px;
