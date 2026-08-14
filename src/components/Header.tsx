@@ -14,9 +14,8 @@ export default function Header({ appName, userInitial }: HeaderProps) {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '58px 20px 20px',
-        background: 'linear-gradient(180deg, rgba(4,10,10,0.75) 0%, rgba(4,10,10,0.45) 70%, rgba(4,10,10,0) 100%)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20 }}>

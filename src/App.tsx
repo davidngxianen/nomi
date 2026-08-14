@@ -124,7 +124,7 @@ export default function App() {
         <div
           ref={scrollRef}
           className="scroll-area"
-          style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
+          style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'none', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
         >
           <Header appName={APP_NAME} userInitial={userInitial} />
 
