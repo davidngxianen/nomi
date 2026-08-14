@@ -18,6 +18,7 @@ export default function App() {
   const [range, setRange] = useState<Range>('W');
   const [metric, setMetric] = useState<Metric>('hrv');
   const [selDay, setSelDay] = useState(TODAY_INDEX);
+  const [vitalsSelDay, setVitalsSelDay] = useState(TODAY_INDEX);
   const [expanded, setExpanded] = useState<VitalKey | null>(null);
   const [customTag, setCustomTag] = useState('');
   const [userTags, setUserTags] = useState<UserTags>({});
@@ -93,10 +94,10 @@ export default function App() {
     });
   };
 
-  const addCustomTag = () => {
+  const addCustomTag = (idx: number) => {
     const t = customTag.trim();
     if (!t) return;
-    toggleTag(TODAY_INDEX, t);
+    toggleTag(idx, t);
     setCustomTag('');
   };
 
@@ -152,7 +153,9 @@ export default function App() {
               onToggleTag={toggleTag}
               customTag={customTag}
               onCustomTagChange={setCustomTag}
-              onAddCustomTag={addCustomTag}
+              onAddCustomTag={() => addCustomTag(vitalsSelDay)}
+              selDay={vitalsSelDay}
+              onSelectDay={setVitalsSelDay}
             />
           )}
           {tab === 'health' && (

@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
+import { fmtDate, getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle, cardStyleClickable } from '../theme';
 import TagChips from './TagChips';
 
@@ -16,6 +16,8 @@ interface VitalsTabProps {
   customTag: string;
   onCustomTagChange: (v: string) => void;
   onAddCustomTag: () => void;
+  selDay: number;
+  onSelectDay: (idx: number) => void;
 }
 
 function zone(val: number, lo: number, hi: number) {
@@ -37,10 +39,11 @@ interface VitalCfg {
   action: string;
 }
 
-export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, onToggleTag, customTag, onCustomTagChange, onAddCustomTag }: VitalsTabProps) {
+export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, onToggleTag, customTag, onCustomTagChange, onAddCustomTag, selDay, onSelectDay }: VitalsTabProps) {
   const days = getDays();
-  const today = days[TODAY_INDEX];
-  const last14 = days.slice(76);
+  const today = days[selDay];
+  const windowStart = Math.max(0, selDay - 13);
+  const last14 = days.slice(windowStart, selDay + 1);
 
   const cfgs: [VitalKey, VitalCfg][] = [
     [
@@ -94,6 +97,10 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         Today, in plain language — and one thing to do about each.
       </div>
 
+      <div className="gsap-stagger">
+        <DayTimeline days={days} selDay={selDay} onSelectDay={onSelectDay} accent={accent} />
+      </div>
+
       {cfgs.map(([shortKey, cfg]) => (
         <div className="gsap-stagger" key={shortKey}>
           <VitalCard
@@ -108,12 +115,16 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
       ))}
 
       <div className="gsap-stagger" style={cardStyle}>
-        <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 6 }}>Tag today</div>
+        <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 6 }}>
+          {selDay === TODAY_INDEX ? 'Tag today' : `Tag ${fmtDate(today.date)}`}
+        </div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)', marginBottom: 16 }}>
-          What did today look like? Tags teach the app what moves your numbers — future summaries get sharper.
+          {selDay === TODAY_INDEX
+            ? "What did today look like? Tags teach the app what moves your numbers — future summaries get sharper."
+            : "What did this day look like? Tags teach the app what moves your numbers — future summaries get sharper."}
         </div>
         <div style={{ marginBottom: 14 }}>
-          <TagChips idx={TODAY_INDEX} userTags={userTags} onToggleTag={onToggleTag} accent={accent} />
+          <TagChips idx={selDay} userTags={userTags} onToggleTag={onToggleTag} accent={accent} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
@@ -131,6 +142,51 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
           Your tags are already paying off: mornings after "Meditation" average a higher HRV than your usual, and "Late meal" evenings tend to show up as a warmer resting heart rate. The more you tag, the more specific these reads get.
         </div>
       </div>
+    </div>
+  );
+}
+
+const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+function DayTimeline({ days, selDay, onSelectDay, accent }: { days: ReturnType<typeof getDays>; selDay: number; onSelectDay: (idx: number) => void; accent: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const start = Math.max(0, TODAY_INDEX - 20);
+  const range = days.slice(start, TODAY_INDEX + 1);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+  }, []);
+
+  return (
+    <div
+      ref={scrollRef}
+      className="scroll-area"
+      style={{ display: 'flex', gap: 8, overflowX: 'auto', touchAction: 'pan-x', margin: '0 -20px 20px', padding: '0 20px' }}
+    >
+      {range.map((d) => {
+        const isSel = d.i === selDay;
+        const isToday = d.i === TODAY_INDEX;
+        return (
+          <div
+            key={d.i}
+            onClick={() => onSelectDay(d.i)}
+            style={{
+              flexShrink: 0,
+              minWidth: 46,
+              padding: '9px 6px',
+              borderRadius: 14,
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: isSel ? accent : 'rgba(255,255,255,0.07)',
+              border: `1px solid ${isSel ? accent : 'rgba(255,255,255,0.14)'}`,
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: isSel ? '#141a10' : 'rgba(255,255,255,0.5)' }}>{DOW[d.date.getDay()]}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: isSel ? '#141a10' : '#fff', marginTop: 2 }}>{d.date.getDate()}</div>
+            {isToday && <div style={{ width: 4, height: 4, borderRadius: 2, background: isSel ? '#141a10' : accent, margin: '4px auto 0' }} />}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -154,26 +210,37 @@ function VitalCard({
   const bars = last14.map((d, j) => {
     const t = mx === mn ? 0.5 : (d[cfg.key] - mn) / (mx - mn);
     const hpx = Math.round(10 + t * 42);
-    const isLast = j === 13;
+    const isLast = j === last14.length - 1;
     return { hpx, color: isLast ? accent : hexA(accent, 0.22 + t * 0.3) };
   });
 
   const dotRef = useRef<HTMLDivElement>(null);
   const valueRef = useRef<HTMLSpanElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
+  const isFirstRun = useRef(true);
+  const counterRef = useRef({ v: 0 });
 
   useEffect(() => {
-    gsap.fromTo(dotRef.current, { left: '0%' }, { left: `${pct}%`, duration: 1, ease: 'power3.out', delay: 0.15 });
-    const counter = { v: 0 };
-    gsap.to(counter, {
-      v: val,
-      duration: 1,
-      ease: 'power2.out',
-      delay: 0.1,
-      onUpdate: () => {
-        if (valueRef.current) valueRef.current.textContent = cfg.fmt(Math.round(counter.v));
-      },
-    });
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      gsap.fromTo(dotRef.current, { left: '0%' }, { left: `${pct}%`, duration: 1, ease: 'power3.out', delay: 0.15 });
+      gsap.fromTo(
+        counterRef.current,
+        { v: 0 },
+        { v: val, duration: 1, ease: 'power2.out', delay: 0.1, onUpdate: () => { if (valueRef.current) valueRef.current.textContent = cfg.fmt(Math.round(counterRef.current.v)); } }
+      );
+    } else {
+      // slide continuously from the current position to the new one — no opacity change
+      gsap.to(dotRef.current, { left: `${pct}%`, duration: 1.1, ease: 'power2.inOut' });
+      gsap.to(counterRef.current, {
+        v: val,
+        duration: 1.1,
+        ease: 'power2.out',
+        onUpdate: () => {
+          if (valueRef.current) valueRef.current.textContent = cfg.fmt(Math.round(counterRef.current.v));
+        },
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [val, pct]);
 
@@ -200,7 +267,7 @@ function VitalCard({
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.14)', borderRadius: '4px 0 0 4px' }} />
           <div style={{ flex: 1, background: 'rgba(255,255,255,0.24)', margin: '0 2px' }} />
           <div style={{ flex: 1, background: hexA(accent, 0.45), borderRadius: '0 4px 4px 0' }} />
-          <div ref={dotRef} style={{ position: 'absolute', top: -4, left: `${pct}%`, transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: '50%', background: accent, border: '3px solid rgba(8,20,18,0.9)', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }} />
+          <div ref={dotRef} style={{ position: 'absolute', top: -4, left: '0%', transform: 'translateX(-50%)', width: 16, height: 16, borderRadius: '50%', background: accent, border: '3px solid rgba(8,20,18,0.9)', boxShadow: '0 2px 6px rgba(0,0,0,0.4)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
           {cfg.zones.map((z, i) => (
