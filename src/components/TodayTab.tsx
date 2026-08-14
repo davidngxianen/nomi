@@ -16,50 +16,41 @@ export default function TodayTab({ accent, userName, viewed, onOpenStory }: Toda
   const days = getDays();
   const rootRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<SVGSVGElement>(null);
-  const ringRotorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       gsap.from('.gsap-stagger', { opacity: 0, y: 22, duration: 0.55, ease: 'power2.out', stagger: 0.09 });
       gsap.to(arrowRef.current, { x: 4, duration: 0.7, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 0.6 });
-      gsap.to(ringRotorRef.current, { rotate: 360, duration: 16, ease: 'none', repeat: -1 });
     }, rootRef);
     return () => ctx.revert();
   }, []);
 
-  const ringGradient = 'conic-gradient(from 0deg, #7dd8c8, #d6e94a, #f2a6d0, #8fb3f2, #7dd8c8)';
-
   return (
     <div ref={rootRef}>
-      <div className="gsap-stagger" style={{ position: 'relative', margin: '0 20px 26px' }}>
-        {/* chromatic ring hugging the card border, nothing behind the card itself */}
-        <div style={{ position: 'relative', borderRadius: 30, padding: 2, overflow: 'hidden' }}>
-          <div ref={ringRotorRef} style={{ position: 'absolute', inset: '-60%', background: ringGradient }} />
-          <div
-            onClick={() => onOpenStory(TODAY_INDEX)}
-            style={{
-              position: 'relative',
-              padding: '26px 26px 22px',
-              borderRadius: 28,
-              background: 'rgba(6,18,16,0.78)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: accent, marginBottom: 20, animation: 'pulseDot 2.4s ease-in-out infinite' }} />
-            <div style={{ fontSize: 24, lineHeight: 1.3, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{userName}, your daily summary is ready</div>
-            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.55)', marginBottom: 18 }}>
-              Something from last night is worth 60 seconds. Three short cards, one thing to do — no numbers thrown at you.
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12.5, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>Tap to open</span>
-              <svg ref={arrowRef} width="14" height="12" viewBox="0 0 14 12" fill="none">
-                <path d="M1 6h11M8 1l5 5-5 5" stroke="rgba(255,255,255,0.62)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
+      <div
+        className="gsap-stagger"
+        onClick={() => onOpenStory(TODAY_INDEX)}
+        style={{
+          margin: '0 20px 26px',
+          padding: '26px 26px 22px',
+          borderRadius: 28,
+          background: 'rgba(6,18,16,0.78)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.35)',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: accent, marginBottom: 20, animation: 'pulseDot 2.4s ease-in-out infinite' }} />
+        <div style={{ fontSize: 24, lineHeight: 1.3, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{userName}, your daily summary is ready</div>
+        <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.55)', marginBottom: 18 }}>
+          Something from last night is worth 60 seconds. Three short cards, one thing to do — no numbers thrown at you.
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12.5, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>Tap to open</span>
+          <svg ref={arrowRef} width="14" height="12" viewBox="0 0 14 12" fill="none">
+            <path d="M1 6h11M8 1l5 5-5 5" stroke="rgba(255,255,255,0.62)" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </div>
 
