@@ -24,6 +24,15 @@ function zone(val: number, lo: number, hi: number) {
   return Math.max(3, Math.min(97, ((val - lo) / (hi - lo)) * 100));
 }
 
+const DOW_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+// deterministic pseudo-bedtime position (0 = earliest, 100 = latest) derived from existing day fields
+function bedtimeOffset(d: ReturnType<typeof getDays>[number]): number {
+  const base = d.late ? 60 : 26;
+  const jitter = (100 - d.cons) * 0.22;
+  return Math.min(90, Math.max(6, base + jitter - 8));
+}
+
 interface VitalCfg {
   key: 'hrv' | 'rhr' | 'cons';
   name: string;
@@ -44,6 +53,7 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
   const today = days[selDay];
   const windowStart = Math.max(0, selDay - 13);
   const last14 = days.slice(windowStart, selDay + 1);
+  const consAvg = Math.round(last14.reduce((a, d) => a + d.cons, 0) / last14.length);
 
   const cfgs: [VitalKey, VitalCfg][] = [
     [
@@ -52,9 +62,9 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         key: 'hrv', name: 'HRV · recovery', lo: 38, hi: 78, unit: 'ms',
         fmt: (v) => `${v}`, zones: ['settling', 'your usual', 'plenty of headroom'],
         headline: (v) => (v >= 62 ? 'Recovered and ready' : v >= 54 ? 'Right around your usual' : 'Asking for a gentler day'),
-        detail: `Your HRV has climbed about 8% over three months — slow, quiet progress that usually reflects steadier sleep. Today sits ${today.hrv >= 58 ? 'comfortably inside' : 'slightly below'} your normal band.`,
-        honest: "What HRV can’t tell you: why. It notices load — training, late nights, stress, a cold brewing — but not which one. Your tags fill that gap.",
-        action: today.hrv >= 62 ? 'Green light: a harder session or a demanding day fits well today.' : 'Favor an easy effort today — a walk or light session. Recheck tomorrow; one morning is a data point, not a verdict.',
+        detail: `Your HRV has climbed about 8% over three months, slow, quiet progress that usually reflects steadier sleep. Today sits ${today.hrv >= 58 ? 'comfortably inside' : 'slightly below'} your normal band.`,
+        honest: "What HRV can’t tell you: why. It notices load, such as training, late nights, stress, or a cold brewing, but not which one. Your tags fill that gap.",
+        action: today.hrv >= 62 ? 'Green light: a harder session or a demanding day fits well today.' : 'Favor an easy effort today, like a walk or light session. Recheck tomorrow; one morning is a data point, not a verdict.',
       },
     ],
     [
@@ -65,7 +75,7 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         headline: (v) => (v <= 60 ? 'Calm and efficient' : v <= 66 ? 'Steady, in your usual range' : 'Running a little warm'),
         detail: `You average ${Math.round(days.slice(60).reduce((a, d) => a + d.rhr, 0) / 30)} bpm at rest this month. Today's ${today.rhr} bpm is ${today.rhr <= 62 ? 'on the restful side of' : 'near the middle of'} that range.`,
         honest: 'A single high morning often just means a warm room, a late meal, or a glass of wine. It matters when it stays elevated for several days.',
-        action: today.rhr <= 63 ? 'Nothing needed — your heart is doing quiet, efficient work. Enjoy it.' : "Hydrate early and keep caffeine to the morning; both nudge tonight’s reading back down.",
+        action: today.rhr <= 63 ? 'Nothing needed. Your heart is doing quiet, efficient work, so enjoy it.' : "Hydrate early and keep caffeine to the morning; both nudge tonight’s reading back down.",
       },
     ],
     [
@@ -73,10 +83,12 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
       {
         key: 'cons', name: 'Sleep consistency', lo: 40, hi: 98, unit: '%',
         fmt: (v) => `${v}`, zones: ['finding rhythm', 'steady', 'locked in'],
-        headline: (v) => (v >= 82 ? 'Your rhythm is locked in' : v >= 65 ? 'Mostly steady, slightly drifting' : 'Rhythm took the week off'),
-        detail: `Consistency measures how similar your bed and wake times are day to day — the thing your body clock cares about most, even more than total hours. This week you're at ${today.cons}%.`,
-        honest: 'It says nothing about sleep quality on any one night — just timing. A great night at an odd hour still reads as inconsistent.',
-        action: today.cons >= 80 ? "Protect the streak: keep tonight’s bedtime within 30 minutes of usual." : "Pick one anchor — the same wake time daily — and let bedtime follow. It’s the single highest-leverage sleep habit.",
+        headline: (v) => (v >= 82 ? 'Your rhythm is locked in' : v >= 65 ? 'Mostly steady, slightly drifting' : 'Rhythm took the day off'),
+        detail: `Consistency measures how similar your bed and wake times are day to day. That's the thing your body clock cares about most, even more than total hours. ${
+          selDay === TODAY_INDEX ? "Today you're" : `On ${fmtDate(today.date)}, you were`
+        } at ${today.cons}%, ${today.cons >= consAvg ? 'a bit steadier than' : 'a bit looser than'} your recent average of ${consAvg}%.`,
+        honest: 'It says nothing about sleep quality on any one night, just timing. A great night at an odd hour still reads as inconsistent.',
+        action: today.cons >= 80 ? "Protect the streak: keep tonight’s bedtime within 30 minutes of usual." : "Pick one anchor, the same wake time daily, and let bedtime follow. It’s the single highest-leverage sleep habit.",
       },
     ],
   ];
@@ -94,7 +106,7 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
     <div ref={rootRef} style={{ padding: '0 20px' }}>
       <div className="gsap-stagger" style={{ fontSize: 23, fontWeight: 700, color: '#fff', margin: '6px 0 4px' }}>Vitals</div>
       <div className="gsap-stagger" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>
-        Today, in plain language — and one thing to do about each.
+        Today, in plain language, and one thing to do about each.
       </div>
 
       <div className="gsap-stagger">
@@ -120,8 +132,8 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         </div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.65)', marginBottom: 16 }}>
           {selDay === TODAY_INDEX
-            ? "What did today look like? Tags teach the app what moves your numbers — future summaries get sharper."
-            : "What did this day look like? Tags teach the app what moves your numbers — future summaries get sharper."}
+            ? "What did today look like? Tags teach the app what moves your numbers, so future summaries get sharper."
+            : "What did this day look like? Tags teach the app what moves your numbers, so future summaries get sharper."}
         </div>
         <div style={{ marginBottom: 14 }}>
           <TagChips idx={selDay} userTags={userTags} onToggleTag={onToggleTag} accent={accent} />
@@ -214,6 +226,21 @@ function VitalCard({
     return { hpx, color: isLast ? accent : hexA(accent, 0.22 + t * 0.3) };
   });
 
+  const last5 = last14.slice(-5);
+  const bedtimeRows = last5.map((d, j) => ({
+    dow: DOW_LABELS[d.date.getDay()],
+    offset: bedtimeOffset(d),
+    isLast: j === last5.length - 1,
+  }));
+  const bedtimeTrend = (() => {
+    if (bedtimeRows.length < 2) return 'holding steady';
+    const first = bedtimeRows[0].offset;
+    const lastOff = bedtimeRows[bedtimeRows.length - 1].offset;
+    if (lastOff > first + 8) return 'drifting later';
+    if (lastOff < first - 8) return 'settling earlier';
+    return 'holding steady';
+  })();
+
   const dotRef = useRef<HTMLDivElement>(null);
   const valueRef = useRef<HTMLSpanElement>(null);
   const barsRef = useRef<HTMLDivElement>(null);
@@ -245,9 +272,13 @@ function VitalCard({
   }, [val, pct]);
 
   useEffect(() => {
-    if (expanded && barsRef.current) {
+    if (!expanded || !barsRef.current) return;
+    if (cfg.key === 'cons') {
+      gsap.from(barsRef.current.querySelectorAll('.bedtime-bar'), { width: 0, duration: 0.5, ease: 'power2.out', stagger: 0.06 });
+    } else {
       gsap.from(barsRef.current.children, { height: 0, duration: 0.5, ease: 'power2.out', stagger: 0.02 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expanded]);
 
   return (
@@ -279,12 +310,42 @@ function VitalCard({
       </div>
       {expanded && (
         <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.12)', animation: 'storyIn .3s ease' }}>
-          <div ref={barsRef} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 52, marginBottom: 14 }}>
-            {bars.map((b, i) => (
-              <div key={i} style={{ flex: 1, height: b.hpx, borderRadius: 3, background: b.color }} />
-            ))}
-          </div>
-          <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>LAST 14 DAYS</div>
+          {cfg.key === 'cons' ? (
+            <>
+              <div ref={barsRef} style={{ marginBottom: 14 }}>
+                {bedtimeRows.map((row, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
+                    <span style={{ width: 20, flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{row.dow}</span>
+                    <div style={{ position: 'relative', flex: 1, height: 8 }}>
+                      <div
+                        className="bedtime-bar"
+                        style={{
+                          position: 'absolute',
+                          left: `${row.offset}%`,
+                          width: `${Math.min(48, 100 - row.offset)}%`,
+                          height: 8,
+                          borderRadius: 4,
+                          background: row.isLast ? accent : hexA(accent, 0.4),
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14, letterSpacing: 0.5 }}>
+                BEDTIME, THIS WEEK: {bedtimeTrend.toUpperCase()}
+              </div>
+            </>
+          ) : (
+            <>
+              <div ref={barsRef} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 52, marginBottom: 14 }}>
+                {bars.map((b, i) => (
+                  <div key={i} style={{ flex: 1, height: b.hpx, borderRadius: 3, background: b.color }} />
+                ))}
+              </div>
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>LAST 14 DAYS</div>
+            </>
+          )}
           <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.72)', marginBottom: 12 }}>{cfg.detail}</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', marginBottom: 14 }}>{cfg.honest}</div>
           <ActionBox accent={accent} kicker="TRY" text={cfg.action} />

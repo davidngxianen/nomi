@@ -6,8 +6,9 @@ import TodayTab from './components/TodayTab';
 import VitalsTab from './components/VitalsTab';
 import HealthTab, { type Metric, type Range } from './components/HealthTab';
 import StoryOverlay, { type StoryState } from './components/StoryOverlay';
-import { getDays, storySegs, TODAY_INDEX, type UserTags } from './data';
-import { ACCENT, APP_NAME, USER_NAME } from './theme';
+import MenuDrawer from './components/MenuDrawer';
+import { DEFAULT_PROFILE, getDays, storySegs, TODAY_INDEX, type Profile, type UserTags } from './data';
+import { ACCENT, APP_NAME } from './theme';
 
 type VitalKey = 'hrv' | 'rhr' | 'sleep';
 
@@ -23,6 +24,9 @@ export default function App() {
   const [customTag, setCustomTag] = useState('');
   const [userTags, setUserTags] = useState<UserTags>({});
   const [headerOpacity, setHeaderOpacity] = useState(1);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
+  const [ringConnected, setRingConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fadeTicking = useRef(false);
 
@@ -48,10 +52,34 @@ export default function App() {
       const t = JSON.parse(localStorage.getItem('nomi.tags') || '{}');
       setViewed(v);
       setUserTags(t);
+      const p = JSON.parse(localStorage.getItem('nomi.profile') || 'null');
+      if (p) setProfile({ ...DEFAULT_PROFILE, ...p });
+      setRingConnected(localStorage.getItem('nomi.ringConnected') === 'true');
     } catch {
       // ignore corrupt local storage
     }
   }, []);
+
+  const saveProfile = (p: Profile) => {
+    setProfile(p);
+    try {
+      localStorage.setItem('nomi.profile', JSON.stringify(p));
+    } catch {
+      // storage unavailable
+    }
+  };
+
+  const toggleRingConnected = () => {
+    setRingConnected((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nomi.ringConnected', String(next));
+      } catch {
+        // storage unavailable
+      }
+      return next;
+    });
+  };
 
   const openStory = (idx: number) => {
     const next = { ...viewed, [idx]: true };
@@ -101,7 +129,8 @@ export default function App() {
     setCustomTag('');
   };
 
-  const userInitial = USER_NAME.charAt(0).toUpperCase();
+  const userName = profile.name.trim() || DEFAULT_PROFILE.name;
+  const userInitial = userName.charAt(0).toUpperCase();
 
   return (
     <div className="stage">
@@ -141,9 +170,9 @@ export default function App() {
           onScroll={onScroll}
           style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'none', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
         >
-          <Header appName={APP_NAME} userInitial={userInitial} opacity={headerOpacity} />
+          <Header appName={APP_NAME} userInitial={userInitial} opacity={headerOpacity} onMenuClick={() => setMenuOpen(true)} />
 
-          {tab === 'today' && <TodayTab accent={ACCENT} userName={USER_NAME} viewed={viewed} userTags={userTags} onOpenStory={openStory} />}
+          {tab === 'today' && <TodayTab accent={ACCENT} userName={userName} viewed={viewed} userTags={userTags} onOpenStory={openStory} />}
           {tab === 'vitals' && (
             <VitalsTab
               accent={ACCENT}
@@ -177,6 +206,16 @@ export default function App() {
         <TabBar tab={tab} onChange={changeTab} accent={ACCENT} />
 
         <StoryOverlay story={story} accent={ACCENT} onNext={storyNext} onPrev={storyPrev} onClose={closeStory} />
+
+        <MenuDrawer
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          accent={ACCENT}
+          profile={profile}
+          onSaveProfile={saveProfile}
+          ringConnected={ringConnected}
+          onToggleRingConnected={toggleRingConnected}
+        />
       </div>
     </div>
   );

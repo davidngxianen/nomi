@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react';
 
 export const ACCENT = '#D6E94A';
 export const APP_NAME = 'Nomi';
-export const USER_NAME = 'Sophia';
 
 export const cardStyle: CSSProperties = {
   margin: '0 0 14px',

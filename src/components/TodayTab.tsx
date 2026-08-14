@@ -45,7 +45,7 @@ export default function TodayTab({ accent, userName, viewed, userTags, onOpenSto
         <div style={{ width: 10, height: 10, borderRadius: '50%', background: accent, marginBottom: 20, animation: 'pulseDot 2.4s ease-in-out infinite' }} />
         <div style={{ fontSize: 24, lineHeight: 1.3, fontWeight: 600, color: '#fff', marginBottom: 8 }}>{userName}, your daily summary is ready</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.55)', marginBottom: 18 }}>
-          Something from last night is worth 60 seconds. Three short cards, one thing to do — no numbers thrown at you.
+          Something from last night is worth 60 seconds. Three short cards, one thing to do, and no numbers thrown at you.
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12.5, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.62)', fontWeight: 700 }}>Tap to open</span>
@@ -329,8 +329,8 @@ function ObservationCard({ days, accent }: { days: ReturnType<typeof getDays>; a
   const totalCk = days.slice(83).reduce((a, d) => a + d.checkins.length, 0);
   const observation =
     morningShare / totalCk > 0.5
-      ? 'Most of your check-ins land in the morning, soon after waking — a steady rhythm like this is what makes your trends trustworthy. Keep it exactly as it is.'
-      : 'Your check-ins are spread through the day. No wrong answers here — but a consistent morning glance tends to make week-over-week patterns easier to spot.';
+      ? 'Most of your check-ins land in the morning, soon after waking, and a steady rhythm like this is what makes your trends trustworthy. Keep it exactly as it is.'
+      : 'Your check-ins are spread through the day. No wrong answers here, but a consistent morning glance tends to make week-over-week patterns easier to spot.';
   return (
     <div style={{ margin: '0 20px 20px', padding: '18px 22px', borderRadius: 20, background: 'rgba(6,14,13,0.78)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
       <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: 6 }}>What we're noticing</div>

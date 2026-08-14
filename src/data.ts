@@ -87,16 +87,16 @@ export function narrative(idx: number): Narrative {
   if (d.late) {
     const lateCount = days.slice(Math.max(0, idx - 29), idx + 1).filter((x) => x.late).length;
     headline = 'A later night, a softer morning';
-    why = `Bedtime drifted later than usual, and your body spent the morning catching up — recovery ran a little lower, heart rate a touch higher. Nothing is wrong; this is exactly how a short night is supposed to look. That's ${lateCount} later nights in the past month.`;
+    why = `Bedtime drifted later than usual, so your body spent the morning catching up, and recovery ran a little lower with heart rate a touch higher. Nothing is wrong; this is exactly how a short night is supposed to look. That's ${lateCount} later nights in the past month.`;
     action = 'Keep today light and aim to wind down 30 minutes earlier tonight. One earlier night usually brings the numbers back on their own.';
   } else if (d.prevRun && d.hrv < 56) {
     headline = 'Your body is busy rebuilding';
-    why = 'You trained the day before, and this dip is the repair work showing up — training load, not trouble. It typically rebounds within a day or two.';
+    why = 'You trained the day before, and this dip is the repair work showing up, which is training load, not trouble. It typically rebounds within a day or two.';
     action = 'An easy day helps the rebound: a walk, stretching, or simply an unhurried evening.';
   } else if (d.travel) {
-    headline = "A travel day — different rhythm, that’s all";
+    headline = "A travel day, just a different rhythm";
     why = 'New places shift sleep timing and routine, and the numbers reflect the change of scene rather than a change in health.';
-    action = 'Get morning light and keep meals near your usual times — the fastest way to settle into a new rhythm.';
+    action = 'Get morning light and keep meals near your usual times, which is the fastest way to settle into a new rhythm.';
   } else if (d.hrv >= 62 && d.sleepH >= 7.3) {
     headline = 'You woke up with headroom';
     why = 'Solid sleep and strong recovery lined up. Days like this are when your body handles more with ease.';
@@ -104,10 +104,10 @@ export function narrative(idx: number): Narrative {
     actionKicker = 'GO';
   } else if (d.med) {
     headline = 'A calm, steady morning';
-    why = 'Recovery held its ground. Mornings after you tagged meditation tend to look like this — steadier and slightly higher than your average.';
+    why = 'Recovery held its ground. Mornings after you tagged meditation tend to look like this, running steadier and slightly higher than your average.';
     action = 'Whatever you did yesterday evening, it worked. Worth repeating tonight.';
   } else {
-    headline = 'A steady, unremarkable morning — the good kind';
+    headline = 'A steady, unremarkable morning, the good kind';
     why = 'Everything sat inside your usual range. Quiet data is a sign of a consistent routine doing its job.';
     action = 'Nothing to fix. A short walk after lunch keeps the streak of good mornings going.';
   }
@@ -128,14 +128,14 @@ export function storySegs(idx: number): StorySeg[] {
   const d = getDays()[idx];
   const n = narrative(idx);
   const dateLabel = fmtDate(d.date, true);
-  const sleepWord = d.cons >= 82 ? 'right on your usual rhythm' : d.cons >= 65 ? 'a little off your usual rhythm' : 'off-rhythm — worth a gentle reset';
+  const sleepWord = d.cons >= 82 ? 'right on your usual rhythm' : d.cons >= 65 ? 'a little off your usual rhythm' : 'off rhythm, worth a gentle reset';
   const hrvWord = d.hrv >= 62 ? 'more settled than your average' : d.hrv >= 54 ? 'right around your average' : 'working a bit harder than usual';
   return [
     { kicker: dateLabel, big: 'Your night left you something.', sub: 'Three things worth knowing, and one thing to do. Tap through.' },
-    { kicker: 'Sleep', stat: `${d.sleepH}h`, big: d.sleepH >= 7.3 ? "A proper night’s rest" : 'Shorter than your body prefers', sub: `Bedtime was ${sleepWord}. One night never defines a trend — but rhythm is the part your body notices most.` },
-    { kicker: 'Heart', stat: `${d.hrv}`, statUnit: 'ms HRV', big: `Your recovery was ${hrvWord}`, sub: `Resting heart rate sat at ${d.rhr} bpm. A single morning of HRV says little on its own — it earns meaning over weeks, and yours is trending gently upward.` },
+    { kicker: 'Sleep', stat: `${d.sleepH}h`, big: d.sleepH >= 7.3 ? "A proper night’s rest" : 'Shorter than your body prefers', sub: `Bedtime was ${sleepWord}. One night never defines a trend, but rhythm is the part your body notices most.` },
+    { kicker: 'Heart', stat: `${d.hrv}`, statUnit: 'ms HRV', big: `Your recovery was ${hrvWord}`, sub: `Resting heart rate sat at ${d.rhr} bpm. A single morning of HRV says little on its own, since it earns meaning over weeks, and yours is trending gently upward.` },
     { kicker: 'The pattern', big: n.headline, sub: n.why },
-    { kicker: 'One thing for today', big: n.action, sub: "That’s it. No score to chase — check back tomorrow to see what tonight gives you.", last: true },
+    { kicker: 'One thing for today', big: n.action, sub: "That’s it. No score to chase, just check back tomorrow to see what tonight gives you.", last: true },
   ];
 }
 
@@ -151,7 +151,7 @@ const TAG_WHY: Record<string, string> = {
   Meditation: "calm evenings tend to lift the next morning’s recovery",
   'Late meal': 'digesting late keeps heart rate slightly higher overnight',
   Travel: 'new time and place shift the rhythm more than the health',
-  'Social evening': "later, livelier nights trade a little recovery for a good time — a fair trade, occasionally",
+  'Social evening': "later, livelier nights trade a little recovery for a good time, a fair trade, occasionally",
   Alcohol: 'even one drink tends to show up as a warmer, less settled night',
   'Early night': 'extra sleep almost always pays out visibly the next morning',
   Strength: 'muscle repair borrows a little recovery overnight',
@@ -161,7 +161,7 @@ const TAG_WHY: Record<string, string> = {
 
 export function tagWhyLine(tag: string): string | undefined {
   const line = TAG_WHY[tag];
-  return line ? `${tag.toLowerCase()} — ${line}` : undefined;
+  return line ? `${tag.toLowerCase()}, because ${line}` : undefined;
 }
 
 export interface ChecklistItem {
@@ -177,7 +177,7 @@ const CHECKLIST_NUDGES = [
   'Stretch for two minutes before bed',
 ];
 
-const NON_ACTIONABLE_PREFIXES = ['Nothing to fix. ', 'Nothing needed — ', 'Nothing needed - '];
+const NON_ACTIONABLE_PREFIXES = ['Nothing to fix. '];
 
 function shortenAction(text: string, max = 110): string {
   let cleaned = text;
@@ -201,7 +201,7 @@ export function checklistItems(scope: 'day' | 'week', userTags: UserTags, viewed
     return items;
   }
 
-  // consolidate this week's daily actions into a deduplicated list — no per-day breakdown
+  // consolidate this week's daily actions into a deduplicated list, with no per-day breakdown
   const weekStart = TODAY_INDEX - (TODAY_DOW - 1);
   const seen = new Map<string, number>();
   for (let idx = weekStart; idx <= TODAY_INDEX; idx++) {
@@ -215,3 +215,52 @@ export function checklistItems(scope: 'day' | 'week', userTags: UserTags, viewed
   }
   return items;
 }
+
+export interface Profile {
+  name: string;
+  age: string;
+  weightKg: string;
+  heightCm: string;
+  activities: string[];
+}
+
+export const DEFAULT_PROFILE: Profile = { name: 'Sophia', age: '', weightKg: '', heightCm: '', activities: [] };
+
+export const ACTIVITY_SUGGESTIONS = [
+  'Running',
+  'Walking',
+  'Yoga',
+  'Strength training',
+  'Cycling',
+  'Swimming',
+  'Hiking',
+  'Meditation',
+  'Pilates',
+  'Dancing',
+];
+
+export interface FaqItem {
+  q: string;
+  a: string;
+}
+
+export const FAQ_ITEMS: FaqItem[] = [
+  { q: 'How does Nomi read my HRV and heart rate?', a: 'Once a ring is connected, it measures beat-to-beat intervals overnight and sends that data to Nomi each morning. Without a connected device, Nomi shows sample data so you can explore the app.' },
+  { q: 'Why do my numbers look different from other apps?', a: 'Every device and algorithm measures slightly differently, and normal ranges are personal. Focus on your own trend over weeks, not the raw number itself or how it compares to someone else’s.' },
+  { q: 'What do tags actually do?', a: 'Tags teach Nomi what tends to move your numbers, such as a late meal, a hard run, or a good meditation session. Over time your summaries reference your own patterns instead of generic advice.' },
+  { q: 'Is my data private?', a: 'Your health data stays on this device. Nomi doesn’t require an account and doesn’t send your readings anywhere else.' },
+  { q: 'Can I use Nomi without a ring?', a: 'Yes, Nomi works fine without a connected device using sample data, so you can try the app before deciding to connect hardware.' },
+  { q: 'Why does my profile ask for age, weight, and height?', a: 'Recovery and heart-rate ranges shift meaningfully with age and body composition. Keeping your profile current helps Nomi’s ranges and language stay relevant to you rather than a generic average.' },
+];
+
+export interface MeasuredSection {
+  title: string;
+  body: string;
+}
+
+export const MEASURED_SECTIONS: MeasuredSection[] = [
+  { title: 'HRV (Heart Rate Variability)', body: 'The tiny variation in time between heartbeats, measured overnight. Higher generally means your nervous system is recovered and ready; lower means it’s under load from training, poor sleep, illness, or stress. It notices load, not the cause, so your tags fill in why.' },
+  { title: 'Resting Heart Rate', body: 'Your heart rate during the most restful part of sleep. A steady or falling trend usually means your heart is doing the same work more efficiently. A single high morning is rarely meaningful, but it matters when it stays elevated for several days.' },
+  { title: 'Sleep Consistency', body: 'How similar your bed and wake times are night to night, not how long you slept or how deeply. Your body clock responds more to consistent timing than to any single great (or rough) night.' },
+  { title: 'Why trends matter more than single days', body: 'Every measurement here has natural day-to-day noise. Nomi is built around noticing the pattern across a week or a month, not judging any one morning in isolation.' },
+];

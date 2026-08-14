@@ -73,14 +73,14 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
   const trendGlance =
     metric === 'rhr'
       ? falling
-        ? `At a glance: your ${mName} has eased downward over this stretch — your heart is doing the same work with less effort.`
+        ? `At a glance: your ${mName} has eased downward over this stretch, since your heart is doing the same work with less effort.`
         : rising
-        ? `At a glance: ${mName} has crept up a little. Usually a routine thing — busier weeks, warmer nights — and it settles when rhythm returns.`
+        ? `At a glance: ${mName} has crept up a little. Usually a routine thing, from busier weeks to warmer nights, and it settles when rhythm returns.`
         : `At a glance: ${mName} has been impressively level. Boring lines are healthy lines.`
       : rising
-      ? `At a glance: your ${mName} is trending upward over this stretch. Slow climbs like this are the honest kind — built from ordinary consistent nights.`
+      ? `At a glance: your ${mName} is trending upward over this stretch. Slow climbs like this are the honest kind, built from ordinary consistent nights.`
       : falling
-      ? `At a glance: ${mName} has dipped over this stretch — dips usually track a stretch of late nights or heavy weeks, and rebound the same way.`
+      ? `At a glance: ${mName} has dipped over this stretch. Dips usually track a stretch of late nights or heavy weeks, and rebound the same way.`
       : `At a glance: your ${mName} has held steady. Consistency is the quiet win here.`;
 
   const sd = days[Math.min(TODAY_INDEX, Math.max(0, selDay))];
@@ -89,7 +89,7 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
   const tagLines = selTags.map(tagWhyLine).filter((l): l is string => !!l);
   const selWhy =
     selN.why +
-    (tagLines.length ? ` You tagged ${selTags.join(', ').toLowerCase()}: ${tagLines[0]}.` : selTags.length === 0 ? ' No tags on this day — if you remember it, adding one now still sharpens future reads.' : '');
+    (tagLines.length ? ` You tagged ${selTags.join(', ').toLowerCase()}: ${tagLines[0]}.` : selTags.length === 0 ? ' No tags on this day, but if you remember it, adding one now still sharpens future reads.' : '');
   const selStats = [
     { value: `${sd.hrv}`, label: 'HRV MS' },
     { value: `${sd.rhr}`, label: 'REST BPM' },

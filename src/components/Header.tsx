@@ -2,9 +2,10 @@ interface HeaderProps {
   appName: string;
   userInitial: string;
   opacity: number;
+  onMenuClick: () => void;
 }
 
-export default function Header({ appName, userInitial, opacity }: HeaderProps) {
+export default function Header({ appName, userInitial, opacity, onMenuClick }: HeaderProps) {
   return (
     <div
       style={{
@@ -22,7 +23,7 @@ export default function Header({ appName, userInitial, opacity }: HeaderProps) {
         transition: 'opacity 0.15s linear',
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20 }}>
+      <div onClick={onMenuClick} style={{ display: 'flex', flexDirection: 'column', gap: 5, width: 20, cursor: 'pointer' }}>
         <div style={{ height: 2, background: '#fff', borderRadius: 2 }} />
         <div style={{ height: 2, background: '#fff', borderRadius: 2 }} />
         <div style={{ height: 2, background: '#fff', borderRadius: 2 }} />
