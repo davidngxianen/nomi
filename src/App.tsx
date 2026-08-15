@@ -11,7 +11,7 @@ import Onboarding from './components/Onboarding';
 import { DEFAULT_ONBOARDING_PREFS, DEFAULT_PROFILE, getDays, resolveBackdrop, storySegs, TODAY_INDEX, type OnboardingPrefs, type Profile, type UserTags } from './data';
 import { ACCENT, APP_NAME } from './theme';
 
-type VitalKey = 'hrv' | 'rhr' | 'sleep';
+type VitalKey = 'hrv' | 'rhr' | 'sleep' | 'cardio';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
@@ -209,6 +209,7 @@ export default function App() {
               onAddCustomTag={() => addCustomTag(vitalsSelDay)}
               selDay={vitalsSelDay}
               onSelectDay={setVitalsSelDay}
+              profile={profile}
             />
           )}
           {tab === 'health' && (

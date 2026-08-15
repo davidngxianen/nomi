@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { allTags, fmtDate, getDays, hexA, tagMechanism, TODAY_INDEX, type UserTags } from '../data';
+import { allTags, fmtDate, getDays, hexA, tagMechanism, TODAY_INDEX, type Profile, type UserTags } from '../data';
 import { cardStyle, cardStyleClickable } from '../theme';
 import TagChips from './TagChips';
 
@@ -171,7 +171,7 @@ function buildPatternAdvice(correlations: TagCorrelation[]): string {
   return correlationAdvice(mergeCorrelations(correlations), polarity, tags);
 }
 
-type VitalKey = 'hrv' | 'rhr' | 'sleep';
+type VitalKey = 'hrv' | 'rhr' | 'sleep' | 'cardio';
 
 interface VitalsTabProps {
   accent: string;
@@ -184,6 +184,7 @@ interface VitalsTabProps {
   onAddCustomTag: () => void;
   selDay: number;
   onSelectDay: (idx: number) => void;
+  profile: Profile;
 }
 
 function zone(val: number, lo: number, hi: number) {
@@ -199,8 +200,19 @@ function bedtimeOffset(d: ReturnType<typeof getDays>[number]): number {
   return Math.min(90, Math.max(6, base + jitter - 8));
 }
 
+const DEFAULT_CHRONO_AGE = 32;
+
+// no new sensor needed: cardio age is a read on how HRV/RHR compare to typical adult
+// midpoints, applied as a +/- adjustment to the user's stated age (bounded to +/-15yrs)
+function computeCardioAge(hrv: number, rhr: number, chronoAge: number): number {
+  const hrvAdjustment = (hrv - 58) / 4; // ~1 year younger per 4ms of HRV above the typical midpoint
+  const rhrAdjustment = (63 - rhr) / 2; // ~1 year younger per 2bpm of RHR below the typical midpoint
+  const cardioAge = chronoAge - hrvAdjustment - rhrAdjustment;
+  return Math.round(Math.max(chronoAge - 15, Math.min(chronoAge + 15, cardioAge)));
+}
+
 interface VitalCfg {
-  key: 'hrv' | 'rhr' | 'cons';
+  key: 'hrv' | 'rhr' | 'cons' | 'cardio';
   name: string;
   lo: number;
   hi: number;
@@ -214,12 +226,17 @@ interface VitalCfg {
   action: string;
 }
 
-export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, onToggleTag, customTag, onCustomTagChange, onAddCustomTag, selDay, onSelectDay }: VitalsTabProps) {
+export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, onToggleTag, customTag, onCustomTagChange, onAddCustomTag, selDay, onSelectDay, profile }: VitalsTabProps) {
   const days = getDays();
-  const today = days[selDay];
+  const rawToday = days[selDay];
   const windowStart = Math.max(0, selDay - 13);
-  const last14 = days.slice(windowStart, selDay + 1);
-  const consAvg = Math.round(last14.reduce((a, d) => a + d.cons, 0) / last14.length);
+  const rawLast14 = days.slice(windowStart, selDay + 1);
+  const consAvg = Math.round(rawLast14.reduce((a, d) => a + d.cons, 0) / rawLast14.length);
+
+  const parsedAge = parseInt(profile.age, 10);
+  const chronoAge = Number.isFinite(parsedAge) && parsedAge > 0 ? parsedAge : DEFAULT_CHRONO_AGE;
+  const today = { ...rawToday, cardio: computeCardioAge(rawToday.hrv, rawToday.rhr, chronoAge) };
+  const last14 = rawLast14.map((d) => ({ ...d, cardio: computeCardioAge(d.hrv, d.rhr, chronoAge) }));
 
   const cfgs: [VitalKey, VitalCfg][] = [
     [
@@ -255,6 +272,19 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
         } at ${today.cons}%, ${today.cons >= consAvg ? 'a bit steadier than' : 'a bit looser than'} your recent average of ${consAvg}%.`,
         honest: 'It says nothing about sleep quality on any one night, just timing. A great night at an odd hour still reads as inconsistent.',
         action: today.cons >= 80 ? "Protect the streak: keep tonight’s bedtime within 30 minutes of usual." : "Pick one anchor, the same wake time daily, and let bedtime follow. It’s the single highest-leverage sleep habit.",
+      },
+    ],
+    [
+      'cardio',
+      {
+        key: 'cardio', name: 'Cardio age', lo: chronoAge - 15, hi: chronoAge + 15, reverse: true, unit: 'yrs',
+        fmt: (v) => `${v}`, zones: ['older pace', 'in line with you', 'younger pace'],
+        headline: (v) => (v <= chronoAge - 3 ? 'Beating the clock' : v >= chronoAge + 3 ? 'A bit past your years' : 'Right on pace'),
+        detail: `Cardio age blends your HRV and resting heart rate against typical adult ranges to estimate how your heart is pacing relative to your years. ${
+          profile.age.trim() ? `Using the age you set in Profile, ${chronoAge}, ` : `Since you haven’t set your age in Profile yet, this uses a default of ${chronoAge}, so `
+        }today’s reading comes out to ${today.cardio}.`,
+        honest: 'This is a simplified estimate, not a medical measurement. Two people with identical HRV and resting heart rate can have very different actual cardiovascular health.',
+        action: today.cardio <= chronoAge ? 'Whatever you’re doing for recovery is working, so keep the habits that got you here.' : 'Small, steady habits move this more than any single day: consistent sleep, easy movement, less alcohol.',
       },
     ],
   ];
@@ -454,12 +484,14 @@ function DayTimeline({ days, selDay, onSelectDay, accent }: { days: ReturnType<t
   );
 }
 
+type AugmentedDay = ReturnType<typeof getDays>[number] & { cardio: number };
+
 function VitalCard({
   cfg, today, last14, accent, expanded, onToggle,
 }: {
   cfg: VitalCfg;
-  today: ReturnType<typeof getDays>[number];
-  last14: ReturnType<typeof getDays>;
+  today: AugmentedDay;
+  last14: AugmentedDay[];
   accent: string;
   expanded: boolean;
   onToggle: () => void;
