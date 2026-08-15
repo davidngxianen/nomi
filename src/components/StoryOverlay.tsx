@@ -25,9 +25,11 @@ export default function StoryOverlay({ story, accent, onNext, onPrev, onClose }:
         inset: 0,
         zIndex: 20,
         overflow: 'hidden',
-        background: 'linear-gradient(180deg,#0c2a32 0%,#06120f 55%,#040908 100%)',
+        background: `linear-gradient(180deg, rgba(6,16,18,0.4) 0%, rgba(5,12,12,0.55) 55%, rgba(3,7,7,0.85) 100%), url(${import.meta.env.BASE_URL}mountainriver.jpg)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         transition: 'transform .4s cubic-bezier(.32,.72,0,1)',
-        transform: `translateY(${story ? '0%' : '100%'})`,
+        transform: story ? 'translateY(0)' : 'translateY(2000px)',
         pointerEvents: story ? 'auto' : 'none',
       }}
     >

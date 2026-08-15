@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { allTags, fmtDate, getDays, hexA, TODAY_INDEX, type UserTags } from '../data';
+import { allTags, fmtDate, getDays, hexA, tagMechanism, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle, cardStyleClickable } from '../theme';
 import TagChips from './TagChips';
 
@@ -77,33 +77,98 @@ function mergedPolarity(tags: string[]): Polarity {
   return [...polarities][0];
 }
 
+function netScore(c: MergedCorrelation): number {
+  const goodCount = [c.hrvDelta > 0.5, c.rhrDelta < -0.3, c.consDelta > 1].filter(Boolean).length;
+  const badCount = [c.hrvDelta < -0.5, c.rhrDelta > 0.3, c.consDelta < -1].filter(Boolean).length;
+  return goodCount - badCount;
+}
+
+// scales a tag's score down when it's only backed by a couple of mornings, so a single
+// fluke day can't outweigh a pattern seen across many — full weight kicks in by n=10
+function confidence(n: number): number {
+  return Math.min(n, 10) / 10;
+}
+
+function weightedScore(c: MergedCorrelation): number {
+  return netScore(c) * confidence(c.n);
+}
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')}, and ${names[names.length - 1]}`;
+}
+
+// first available mechanism among a group of tags, so a mixed group still gets one grounded reason
+function firstMechanism(tags: string[]): string | undefined {
+  for (const t of tags) {
+    const m = tagMechanism(t);
+    if (m) return m;
+  }
+  return undefined;
+}
+
 // what "favorable" means for each metric is fixed by physiology (higher HRV, lower RHR,
 // steadier sleep), but whether that's advice to lean in or pull back depends on what the
 // tag actually is — a tag named "Stressful day" shouldn't get "keep this up" just because
 // one small sample happened to look fine
-function correlationAdvice(c: MergedCorrelation, polarity: Polarity): string {
+function correlationAdvice(c: MergedCorrelation, polarity: 'positive' | 'negative' | 'neutral', tags: string[]): string {
   if (c.n === 0) return 'Not enough tagged mornings yet to say anything useful. Keep tagging and check back in a week or two.';
+  const numericScore = netScore(c);
+  const why = firstMechanism(tags);
 
-  const goodCount = [c.hrvDelta > 0.5, c.rhrDelta < -0.3, c.consDelta > 1].filter(Boolean).length;
-  const badCount = [c.hrvDelta < -0.5, c.rhrDelta > 0.3, c.consDelta < -1].filter(Boolean).length;
-  const numericScore = goodCount - badCount;
+  const thinNote = c.n < 3 ? ` That's only based on ${c.n} tagged morning${c.n === 1 ? '' : 's'} so far, so treat it as an early read, not a verdict.` : '';
 
-  if (polarity === 'mixed') {
-    return "This combination mixes habits you'd usually want more of with ones worth moderating, so the read is muddy. Try tagging them separately to see which one is actually driving your numbers.";
-  }
   if (polarity === 'positive') {
-    return numericScore >= 0
-      ? 'Worth keeping up. Mornings tagged like this tend to bring better recovery, so lean on this, especially before a demanding day.'
-      : "Your recovery looks a touch softer around this than usual. Nothing alarming, but pace yourself and watch how the next few mornings land before pushing harder.";
+    return (numericScore >= 0
+      ? `Worth keeping up${why ? ` — ${why}` : ''}. Your data backs that up: mornings tagged like this tend to bring better recovery, so lean on this, especially before a demanding day.`
+      : `Usually this helps${why ? ` because ${why}` : ''}, but your own mornings tagged like this actually look a touch softer than usual. Nothing alarming, just worth watching before you push harder on it.`) + thinNote;
   }
   if (polarity === 'negative') {
-    return numericScore <= 0
-      ? "Worth dialing back when you can. This tends to leave your body working harder the next morning, so pair it with an easier day or an earlier bedtime when you can't avoid it."
-      : "Your numbers haven't shown much cost from this yet, but it's still generally worth keeping in moderation rather than leaning on it.";
+    return (numericScore <= 0
+      ? `Worth dialing back when you can${why ? ` — ${why}` : ''}. Your data agrees: it tends to leave your body working harder the next morning, so pair it with an easier day or an earlier bedtime when you can't avoid it.`
+      : `This usually costs a little${why ? ` because ${why}` : ''}, but your numbers haven't shown much of that yet. Still generally worth keeping in moderation rather than leaning on it.`) + thinNote;
   }
-  if (numericScore >= 2) return 'Worth keeping an eye on. Your recovery tends to look better on mornings tagged like this.';
-  if (numericScore <= -2) return 'Worth keeping an eye on. Your recovery tends to look a little more taxed on mornings tagged like this.';
-  return 'No clear signal yet either way. Keep tagging this and check back in a couple of weeks before changing anything.';
+  if (numericScore >= 2) return `Worth keeping an eye on. Your recovery tends to look better on mornings tagged like this.${thinNote}`;
+  if (numericScore <= -2) return `Worth keeping an eye on. Your recovery tends to look a little more taxed on mornings tagged like this.${thinNote}`;
+  return `No clear signal yet either way. Keep tagging this and check back in a couple of weeks before changing anything.${thinNote}`;
+}
+
+// for a mixed selection, explain each side's usual mechanism and then say which one
+// actually appears to be winning in this person's own data, rather than a static "it's muddy" line
+function mixedAdvice(correlations: TagCorrelation[]): string {
+  const positive = correlations.filter((c) => tagPolarity(c.tag) === 'positive');
+  const negative = correlations.filter((c) => tagPolarity(c.tag) === 'negative');
+  const posNames = joinNames(positive.map((c) => c.tag));
+  const negNames = joinNames(negative.map((c) => c.tag));
+  const posWhy = firstMechanism(positive.map((c) => c.tag));
+  const negWhy = firstMechanism(negative.map((c) => c.tag));
+  const posMerged = mergeCorrelations(positive);
+  const negMerged = mergeCorrelations(negative);
+  // a negative tag's own score is *expected* to be negative — that's it confirming its
+  // reputation, not "losing". compare benefit magnitude vs harm magnitude instead of raw
+  // scores, and weight each by sample size so a morning or two can't outvote a real pattern
+  const posBenefit = Math.max(0, weightedScore(posMerged));
+  const negHarm = Math.max(0, -weightedScore(negMerged));
+
+  const mechanismLine = `${posNames} usually helps${posWhy ? ` because ${posWhy}` : ''}, while ${negNames} usually works against it${negWhy ? ` since ${negWhy}` : ''}.`;
+  const thinSampleNote = (name: string, n: number) =>
+    n > 0 && n < 3 ? ` Worth noting: ${name.toLowerCase()} is only backed by ${n} tagged morning${n === 1 ? '' : 's'} so far, so weigh that side lightly for now.` : '';
+
+  if (Math.abs(posBenefit - negHarm) < 0.15) {
+    return `${mechanismLine} So far in your data neither clearly wins, they roughly cancel out. Try tagging them on separate mornings to see which one is actually driving your recovery.`;
+  }
+  if (posBenefit > negHarm) {
+    return `${mechanismLine} In your own mornings, the lift from ${posNames} looks like it's winning out: recovery holds up reasonably well when both are tagged, so this pairing isn't costing you as much as ${negNames} alone might suggest.${thinSampleNote(negNames, negMerged.n)}`;
+  }
+  return `${mechanismLine} In your own mornings, ${negNames} looks like it's winning out: your numbers lean softer even with ${posNames} in the mix, so it's worth trying ${posNames} on its own to see if it helps more without ${negNames}.${thinSampleNote(posNames, posMerged.n)}`;
+}
+
+function buildPatternAdvice(correlations: TagCorrelation[]): string {
+  const tags = correlations.map((c) => c.tag);
+  const polarity = mergedPolarity(tags);
+  if (polarity === 'mixed') return mixedAdvice(correlations);
+  return correlationAdvice(mergeCorrelations(correlations), polarity, tags);
 }
 
 type VitalKey = 'hrv' | 'rhr' | 'sleep';
@@ -270,8 +335,29 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
             onChange={(e) => onCustomTagChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddCustomTag()}
           />
-          <div style={{ padding: '11px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }} onClick={onAddCustomTag}>
-            Add
+          <div
+            onClick={onAddCustomTag}
+            style={{
+              width: 42,
+              height: 42,
+              flexShrink: 0,
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: customTag.trim() ? 'pointer' : 'default',
+              background: customTag.trim() ? accent : 'rgba(255,255,255,0.09)',
+              transition: 'background .2s',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 1.5v13M1.5 8h13"
+                stroke={customTag.trim() ? '#141a10' : 'rgba(255,255,255,0.4)'}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
         </div>
 
@@ -307,7 +393,7 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)', animation: 'storyIn .3s ease' }}>
             <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: accent, fontWeight: 700, marginBottom: 10 }}>Pattern analysis</div>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.8)', marginBottom: 12 }}>
-              {correlationAdvice(mergeCorrelations(correlations), mergedPolarity(correlations.map((c) => c.tag)))}
+              {buildPatternAdvice(correlations)}
             </div>
             <div style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
               A simple pattern compared to your overall baseline, not proof that one causes the other.

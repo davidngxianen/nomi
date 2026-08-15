@@ -7,7 +7,8 @@ import VitalsTab from './components/VitalsTab';
 import HealthTab, { type Metric, type Range } from './components/HealthTab';
 import StoryOverlay, { type StoryState } from './components/StoryOverlay';
 import MenuDrawer from './components/MenuDrawer';
-import { DEFAULT_PROFILE, getDays, storySegs, TODAY_INDEX, type Profile, type UserTags } from './data';
+import Onboarding from './components/Onboarding';
+import { DEFAULT_ONBOARDING_PREFS, DEFAULT_PROFILE, getDays, resolveBackdrop, storySegs, TODAY_INDEX, type OnboardingPrefs, type Profile, type UserTags } from './data';
 import { ACCENT, APP_NAME } from './theme';
 
 type VitalKey = 'hrv' | 'rhr' | 'sleep';
@@ -27,6 +28,9 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [ringConnected, setRingConnected] = useState(false);
+  const [onboardingPrefs, setOnboardingPrefs] = useState<OnboardingPrefs>(DEFAULT_ONBOARDING_PREFS);
+  const [onboardingDone, setOnboardingDone] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fadeTicking = useRef(false);
 
@@ -55,6 +59,11 @@ export default function App() {
       const p = JSON.parse(localStorage.getItem('nomi.profile') || 'null');
       if (p) setProfile({ ...DEFAULT_PROFILE, ...p });
       setRingConnected(localStorage.getItem('nomi.ringConnected') === 'true');
+      const op = JSON.parse(localStorage.getItem('nomi.onboardingPrefs') || 'null');
+      if (op) setOnboardingPrefs({ ...DEFAULT_ONBOARDING_PREFS, ...op });
+      const done = localStorage.getItem('nomi.onboardingDone') === 'true';
+      setOnboardingDone(done);
+      if (!done) setShowOnboarding(true);
     } catch {
       // ignore corrupt local storage
     }
@@ -64,6 +73,19 @@ export default function App() {
     setProfile(p);
     try {
       localStorage.setItem('nomi.profile', JSON.stringify(p));
+    } catch {
+      // storage unavailable
+    }
+  };
+
+  const completeOnboarding = (p: Profile, prefs: OnboardingPrefs) => {
+    saveProfile(p);
+    setOnboardingPrefs(prefs);
+    setOnboardingDone(true);
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem('nomi.onboardingPrefs', JSON.stringify(prefs));
+      localStorage.setItem('nomi.onboardingDone', 'true');
     } catch {
       // storage unavailable
     }
@@ -130,7 +152,7 @@ export default function App() {
   };
 
   const userName = profile.name.trim() || DEFAULT_PROFILE.name;
-  const userInitial = userName.charAt(0).toUpperCase();
+  const backdrop = resolveBackdrop(onboardingPrefs);
 
   return (
     <div className="stage">
@@ -139,9 +161,10 @@ export default function App() {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${import.meta.env.BASE_URL}day.svg)`,
-            backgroundSize: '175% auto',
-            backgroundPosition: 'center',
+            backgroundImage: backdrop.image ? `url(${import.meta.env.BASE_URL}${backdrop.image})` : undefined,
+            backgroundColor: backdrop.image ? undefined : backdrop.color,
+            backgroundSize: backdrop.image === 'day.svg' ? '175% auto' : 'cover',
+            backgroundPosition: backdrop.position ?? 'center',
             backgroundRepeat: 'no-repeat',
             zIndex: 0,
           }}
@@ -171,7 +194,7 @@ export default function App() {
           onScroll={onScroll}
           style={{ position: 'absolute', inset: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'none', touchAction: 'pan-y', zIndex: 1, paddingBottom: 150 }}
         >
-          <Header appName={APP_NAME} userInitial={userInitial} opacity={headerOpacity} onMenuClick={() => setMenuOpen(true)} />
+          <Header appName={APP_NAME} accent={ACCENT} ringConnected={ringConnected} opacity={headerOpacity} onMenuClick={() => setMenuOpen(true)} />
 
           {tab === 'today' && <TodayTab accent={ACCENT} userName={userName} viewed={viewed} userTags={userTags} onOpenStory={openStory} />}
           {tab === 'vitals' && (
@@ -198,7 +221,6 @@ export default function App() {
               onMetricChange={setMetric}
               onSelectDay={setSelDay}
               userTags={userTags}
-              onToggleTag={toggleTag}
               onOpenStory={openStory}
             />
           )}
@@ -216,7 +238,21 @@ export default function App() {
           onSaveProfile={saveProfile}
           ringConnected={ringConnected}
           onToggleRingConnected={toggleRingConnected}
+          onRelaunchOnboarding={() => {
+            setMenuOpen(false);
+            setShowOnboarding(true);
+          }}
         />
+
+        {showOnboarding && (
+          <Onboarding
+            accent={ACCENT}
+            initialProfile={profile}
+            initialPrefs={onboardingPrefs}
+            onComplete={completeOnboarding}
+            onClose={onboardingDone ? () => setShowOnboarding(false) : undefined}
+          />
+        )}
       </div>
     </div>
   );

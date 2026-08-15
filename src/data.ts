@@ -164,6 +164,12 @@ export function tagWhyLine(tag: string): string | undefined {
   return line ? `${tag.toLowerCase()}, because ${line}` : undefined;
 }
 
+// the raw mechanism clause for a tag, without the "tagname, because" wrapper —
+// for composing into other sentences
+export function tagMechanism(tag: string): string | undefined {
+  return TAG_WHY[tag];
+}
+
 export interface ChecklistItem {
   id: string;
   label: string;
@@ -264,3 +270,120 @@ export const MEASURED_SECTIONS: MeasuredSection[] = [
   { title: 'Sleep Consistency', body: 'How similar your bed and wake times are night to night, not how long you slept or how deeply. Your body clock responds more to consistent timing than to any single great (or rough) night.' },
   { title: 'Why trends matter more than single days', body: 'Every measurement here has natural day-to-day noise. Nomi is built around noticing the pattern across a week or a month, not judging any one morning in isolation.' },
 ];
+
+export type BackdropId = 'mountains' | 'ocean' | 'nightsky' | 'forest' | 'desert' | 'rainmist';
+
+export interface BackdropVariant {
+  id: 'a' | 'b';
+  label: string;
+  image?: string;
+  position?: string;
+  color?: string;
+}
+
+export interface BackdropCategory {
+  id: BackdropId;
+  label: string;
+  swatch: string;
+  image?: string;
+  variants: [BackdropVariant, BackdropVariant];
+}
+
+export const BACKDROP_CATEGORIES: BackdropCategory[] = [
+  {
+    id: 'mountains',
+    label: 'Mountains',
+    swatch: '#2b4a52',
+    image: 'day.svg',
+    variants: [
+      { id: 'a', label: 'high & bright', image: 'day.svg' },
+      { id: 'b', label: 'low & dusky', image: 'mountainriver.jpg' },
+    ],
+  },
+  {
+    id: 'ocean',
+    label: 'Ocean',
+    swatch: '#0e2a44',
+    image: 'ocean.jpg',
+    variants: [
+      { id: 'a', label: 'calm & sunlit', image: 'ocean.jpg' },
+      { id: 'b', label: 'deep & restless', image: 'ocean2.jpg' },
+    ],
+  },
+  {
+    id: 'nightsky',
+    label: 'Night sky',
+    swatch: '#0c1a2e',
+    image: 'cloud.jpg',
+    variants: [
+      { id: 'a', label: 'starlit & clear', image: 'cloud.jpg', position: 'center 15%' },
+      { id: 'b', label: 'clouds & moonlight', image: 'cloud.jpg', position: 'center 85%' },
+    ],
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    swatch: '#1c3b28',
+    variants: [
+      { id: 'a', label: 'bright canopy', color: '#2f5c3e' },
+      { id: 'b', label: 'deep shade', color: '#152b1c' },
+    ],
+  },
+  {
+    id: 'desert',
+    label: 'Desert',
+    swatch: '#6b4226',
+    variants: [
+      { id: 'a', label: 'warm sand', color: '#8a5a35' },
+      { id: 'b', label: 'dusk dunes', color: '#4a2f22' },
+    ],
+  },
+  {
+    id: 'rainmist',
+    label: 'Rain & mist',
+    swatch: '#3a444a',
+    variants: [
+      { id: 'a', label: 'soft grey', color: '#54626a' },
+      { id: 'b', label: 'heavy mist', color: '#28323a' },
+    ],
+  },
+];
+
+export type WeekendPattern = 'same' | 'later' | 'variable';
+export type SummaryTiming = 'coffee' | 'lunch' | 'evening';
+
+export interface OnboardingPrefs {
+  backdrop: BackdropId;
+  backdropVariant: 'a' | 'b';
+  windDown: string;
+  wakeTime: string;
+  weekendPattern: WeekendPattern;
+  summaryTiming: SummaryTiming;
+}
+
+export const DEFAULT_ONBOARDING_PREFS: OnboardingPrefs = {
+  backdrop: 'mountains',
+  backdropVariant: 'a',
+  windDown: '22:30',
+  wakeTime: '06:45',
+  weekendPattern: 'same',
+  summaryTiming: 'coffee',
+};
+
+export function resolveBackdrop(prefs: OnboardingPrefs): BackdropVariant {
+  const cat = BACKDROP_CATEGORIES.find((c) => c.id === prefs.backdrop) ?? BACKDROP_CATEGORIES[0];
+  return cat.variants.find((v) => v.id === prefs.backdropVariant) ?? cat.variants[0];
+}
+
+export function formatTime12(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+export function addMinutes(hhmm: string, mins: number): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = (h * 60 + m + mins + 1440) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}

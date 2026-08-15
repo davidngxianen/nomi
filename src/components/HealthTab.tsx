@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { allTags, fmtDate, getDays, hexA, narrative, tagWhyLine, TODAY_INDEX, type UserTags } from '../data';
 import { cardStyle } from '../theme';
-import TagChips from './TagChips';
 import { ActionBox } from './VitalsTab';
 
 export type Range = 'W' | 'M' | '3M';
@@ -17,7 +16,6 @@ interface HealthTabProps {
   onMetricChange: (m: Metric) => void;
   onSelectDay: (i: number) => void;
   userTags: UserTags;
-  onToggleTag: (idx: number, tag: string) => void;
   onOpenStory: (idx: number) => void;
 }
 
@@ -32,7 +30,7 @@ const RANGE_BTNS: [Range, string][] = [
   ['3M', '3M'],
 ];
 
-export default function HealthTab({ accent, range, metric, selDay, onRangeChange, onMetricChange, onSelectDay, userTags, onToggleTag, onOpenStory }: HealthTabProps) {
+export default function HealthTab({ accent, range, metric, selDay, onRangeChange, onMetricChange, onSelectDay, userTags, onOpenStory }: HealthTabProps) {
   const days = getDays();
   const spanN = range === 'W' ? 7 : range === 'M' ? 30 : 90;
   const slice = days.slice(90 - spanN);
@@ -232,9 +230,6 @@ export default function HealthTab({ accent, range, metric, selDay, onRangeChange
         </div>
         <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>What likely happened</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.75)', marginBottom: 14 }}>{selWhy}</div>
-        <div style={{ marginBottom: 16 }}>
-          <TagChips idx={sd.i} userTags={userTags} onToggleTag={onToggleTag} accent={accent} />
-        </div>
         <ActionBox accent={accent} kicker={selN.actionKicker} text={selN.action} />
       </div>
     </div>

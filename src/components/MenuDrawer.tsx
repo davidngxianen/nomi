@@ -13,9 +13,10 @@ interface MenuDrawerProps {
   onSaveProfile: (p: Profile) => void;
   ringConnected: boolean;
   onToggleRingConnected: () => void;
+  onRelaunchOnboarding: () => void;
 }
 
-export default function MenuDrawer({ open, onClose, accent, profile, onSaveProfile, ringConnected, onToggleRingConnected }: MenuDrawerProps) {
+export default function MenuDrawer({ open, onClose, accent, profile, onSaveProfile, ringConnected, onToggleRingConnected, onRelaunchOnboarding }: MenuDrawerProps) {
   const [view, setView] = useState<View>('menu');
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -62,7 +63,9 @@ export default function MenuDrawer({ open, onClose, accent, profile, onSaveProfi
           padding: '50px 20px 40px',
         }}
       >
-        {view === 'menu' && <MenuList listRef={listRef} accent={accent} ringConnected={ringConnected} onSelect={setView} onClose={onClose} />}
+        {view === 'menu' && (
+          <MenuList listRef={listRef} accent={accent} ringConnected={ringConnected} onSelect={setView} onClose={onClose} onRelaunchOnboarding={onRelaunchOnboarding} />
+        )}
         {view === 'profile' && <ProfileView accent={accent} profile={profile} onSave={onSaveProfile} onBack={() => setView('menu')} />}
         {view === 'faq' && <FaqView accent={accent} onBack={() => setView('menu')} />}
         {view === 'ring' && <RingView accent={accent} connected={ringConnected} onToggle={onToggleRingConnected} onBack={() => setView('menu')} />}
@@ -86,19 +89,21 @@ function BackRow({ onBack, title }: { onBack: () => void; title: string }) {
 }
 
 function MenuList({
-  listRef, accent, ringConnected, onSelect, onClose,
+  listRef, accent, ringConnected, onSelect, onClose, onRelaunchOnboarding,
 }: {
   listRef: React.RefObject<HTMLDivElement | null>;
   accent: string;
   ringConnected: boolean;
   onSelect: (v: View) => void;
   onClose: () => void;
+  onRelaunchOnboarding: () => void;
 }) {
-  const items: { view: View; label: string; badge?: string }[] = [
+  const items: { view?: View; label: string; badge?: string; onClick?: () => void }[] = [
     { view: 'profile', label: 'Profile' },
     { view: 'ring', label: 'Connect to Ring', badge: ringConnected ? 'Connected' : undefined },
     { view: 'measured', label: "How it's measured" },
     { view: 'faq', label: 'FAQ' },
+    { label: 'Initial Setup', onClick: onRelaunchOnboarding },
   ];
   return (
     <div>
@@ -111,11 +116,14 @@ function MenuList({
         </div>
       </div>
       <div ref={listRef}>
-        {items.map((it) => (
+        {items.map((it, i) => (
           <div
-            key={it.view}
-            onClick={() => onSelect(it.view)}
-            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 4px', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
+            key={i}
+            onClick={() => {
+              if (it.onClick) it.onClick();
+              else if (it.view) onSelect(it.view);
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 4px', borderBottom: i === items.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}
           >
             <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: '#fff' }}>{it.label}</span>
             {it.badge && (

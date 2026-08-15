@@ -13,6 +13,10 @@ dist-single
 dist-ssr
 *.local
 
+# raw source photos staged before picking/copying the ones actually used into public/
+/images
+/reference intro.jpg
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
