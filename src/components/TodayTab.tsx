@@ -104,7 +104,7 @@ export default function TodayTab({ accent, userName, viewed, userTags, onOpenSto
 
       <div className="gsap-stagger">
         <div style={{ padding: '0 20px 8px', fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)', fontWeight: 700 }}>When you check in</div>
-        <CheckinChart days={days} />
+        <CheckinChart days={days} accent={accent} />
       </div>
 
       <div className="gsap-stagger">
@@ -301,8 +301,8 @@ const COL_LEFT = (c: number) => 20 + (c / 6) * 72;
 function SunIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="3" stroke="rgba(20,30,30,0.55)" strokeWidth={1.4} />
-      <g stroke="rgba(20,30,30,0.55)" strokeWidth={1.4} strokeLinecap="round">
+      <circle cx="7" cy="7" r="3" stroke="rgba(255,255,255,0.4)" strokeWidth={1.4} />
+      <g stroke="rgba(255,255,255,0.4)" strokeWidth={1.4} strokeLinecap="round">
         <path d="M7 0.5v1.6M7 11.9v1.6M13.5 7h-1.6M2.1 7H0.5M11.6 2.4l-1.1 1.1M3.5 10.5l-1.1 1.1M11.6 11.6l-1.1-1.1M3.5 3.5l-1.1-1.1" />
       </g>
     </svg>
@@ -312,12 +312,12 @@ function SunIcon() {
 function MoonIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M12.5 8.6A5.5 5.5 0 1 1 5.4 1.5a4.4 4.4 0 0 0 7.1 7.1z" fill="rgba(20,30,30,0.55)" />
+      <path d="M12.5 8.6A5.5 5.5 0 1 1 5.4 1.5a4.4 4.4 0 0 0 7.1 7.1z" fill="rgba(255,255,255,0.4)" />
     </svg>
   );
 }
 
-function CheckinChart({ days }: { days: ReturnType<typeof getDays> }) {
+function CheckinChart({ days, accent }: { days: ReturnType<typeof getDays>; accent: string }) {
   const dots: { left: number; top: number }[] = [];
   for (let c = 0; c < 7; c++) {
     const idx = 83 + c;
@@ -326,7 +326,19 @@ function CheckinChart({ days }: { days: ReturnType<typeof getDays> }) {
     });
   }
   return (
-    <div style={{ margin: '0 20px 14px', borderRadius: 26, position: 'relative', height: 230, background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', overflow: 'hidden' }}>
+    <div
+      style={{
+        margin: '0 20px 14px',
+        borderRadius: 24,
+        position: 'relative',
+        height: 230,
+        background: 'rgba(8,20,18,0.72)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+        boxShadow: '0 12px 28px rgba(0,0,0,0.28)',
+        overflow: 'hidden',
+      }}
+    >
       <div style={{ position: 'absolute', top: 14, left: 16 }}>
         <SunIcon />
       </div>
@@ -334,7 +346,19 @@ function CheckinChart({ days }: { days: ReturnType<typeof getDays> }) {
         <MoonIcon />
       </div>
       {dots.map((dot, i) => (
-        <div key={i} style={{ position: 'absolute', width: 10, height: 10, borderRadius: '50%', background: 'rgba(20,32,30,0.6)', left: `calc(${dot.left}% - 5px)`, top: `${dot.top}%` }} />
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: hexA(accent, 0.55),
+            border: `1.5px solid ${hexA(accent, 0.9)}`,
+            left: `calc(${dot.left}% - 5px)`,
+            top: `${dot.top}%`,
+          }}
+        />
       ))}
       {LETTERS.map((l, c) => (
         <span
@@ -345,7 +369,7 @@ function CheckinChart({ days }: { days: ReturnType<typeof getDays> }) {
             left: `${COL_LEFT(c)}%`,
             transform: 'translateX(-50%)',
             fontSize: 11,
-            color: 'rgba(20,30,30,0.55)',
+            color: 'rgba(255,255,255,0.4)',
             fontWeight: 700,
             textAlign: 'center',
           }}

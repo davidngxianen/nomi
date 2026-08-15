@@ -19,6 +19,7 @@ interface OnboardingProps {
 }
 
 const TOTAL_STEPS = 6;
+const FOOTER_HEIGHT = 132;
 
 const inputStyle: React.CSSProperties = {
   width: 90,
@@ -45,6 +46,43 @@ function PrimaryButton({ label, onClick, accent }: { label: string; onClick: () 
   );
 }
 
+function SkipButton({ onClick, label = 'Skip' }: { onClick: () => void; label?: string }) {
+  return (
+    <div onClick={onClick} style={{ textAlign: 'center', padding: '8px', fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.45)', cursor: 'pointer' }}>
+      {label}
+    </div>
+  );
+}
+
+// scrollable content area up top + a footer always pinned to the bottom of the screen,
+// so Continue/Skip never depend on how tall a given step's content is
+function StepShell({ children, footer }: { children: React.ReactNode; footer: React.ReactNode }) {
+  return (
+    <>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: FOOTER_HEIGHT, overflowY: 'auto', padding: '60px 22px 20px' }}>
+        {children}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: FOOTER_HEIGHT,
+          padding: '10px 22px 28px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          gap: 8,
+          background: 'linear-gradient(180deg, rgba(5,11,10,0) 0%, rgba(5,11,10,0.92) 35%, rgba(5,11,10,1) 100%)',
+        }}
+      >
+        {footer}
+      </div>
+    </>
+  );
+}
+
 function StepKicker({ step, accent, title, sub }: { step: number; accent: string; title: string; sub: string }) {
   return (
     <div style={{ marginBottom: 26 }}>
@@ -64,6 +102,7 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
 
   const next = () => setStep((s) => Math.min(TOTAL_STEPS - 1, s + 1));
   const prev = () => setStep((s) => Math.max(0, s - 1));
+  const finish = () => onComplete(profile, prefs);
   const setField = <K extends keyof Profile>(key: K, value: Profile[K]) => setProfile((p) => ({ ...p, [key]: value }));
   const setPref = <K extends keyof OnboardingPrefs>(key: K, value: OnboardingPrefs[K]) => setPrefs((p) => ({ ...p, [key]: value }));
 
@@ -106,7 +145,7 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'flex-end',
-            padding: '0 26px 60px',
+            padding: '0 26px 40px',
             background: `linear-gradient(180deg, rgba(5,15,16,0.15) 0%, rgba(4,10,10,0.55) 60%, rgba(3,7,7,0.92) 100%), url(${import.meta.env.BASE_URL}mountainriver.jpg)`,
             backgroundSize: 'cover',
             backgroundPosition: 'center 20%',
@@ -118,11 +157,19 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
             Your ring listens quietly. We turn what it hears into plain language and one thing to do, never a score to chase.
           </div>
           <PrimaryButton label="Pair my ring" onClick={next} accent={accent} />
+          <SkipButton onClick={next} />
         </div>
       )}
 
       {step === 1 && (
-        <div style={{ padding: '60px 22px 40px' }}>
+        <StepShell
+          footer={
+            <>
+              <PrimaryButton label="Continue" onClick={next} accent={accent} />
+              <SkipButton onClick={next} />
+            </>
+          }
+        >
           <StepKicker step={1} accent={accent} title="A little about your body" sub="Only what changes how we read your ring. Nothing here is ever shown as a goal." />
           {[
             { label: 'Age', key: 'age' as const, unit: '', hint: 'Sets what "your usual" should look like — a normal HRV at 29 and at 55 are different numbers.' },
@@ -147,17 +194,23 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
               <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.45)' }}>{f.hint}</div>
             </div>
           ))}
-          <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '16px 0 20px' }}>
+          <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '16px 0 4px' }}>
             Skip any of these — the app still works, it just starts with broader ranges.
           </div>
-          <PrimaryButton label="Continue" onClick={next} accent={accent} />
-        </div>
+        </StepShell>
       )}
 
       {step === 2 && (
-        <div style={{ padding: '60px 22px 40px' }}>
+        <StepShell
+          footer={
+            <>
+              <PrimaryButton label="Continue" onClick={next} accent={accent} />
+              <SkipButton onClick={next} />
+            </>
+          }
+        >
           <StepKicker step={2} accent={accent} title="What kind of place calms you?" sub="Your answer becomes the app's backdrop — the view you look at your health from." />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 26 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {BACKDROP_CATEGORIES.map((cat) => {
               const selected = prefs.backdrop === cat.id;
               return (
@@ -183,12 +236,11 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
               );
             })}
           </div>
-          <PrimaryButton label="Continue" onClick={next} accent={accent} />
-        </div>
+        </StepShell>
       )}
 
       {step === 3 && (
-        <div style={{ padding: '60px 22px 40px' }}>
+        <StepShell footer={<SkipButton onClick={next} label="Skip this pick" />}>
           <StepKicker step={3} accent={accent} title="Which feels calmer?" sub="Trust your gut, a second's glance is enough. Your pick teaches us the light and mood that settle you." />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {selectedCategory.variants.map((v) => (
@@ -218,11 +270,18 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
           <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', marginTop: 16 }}>
             Tap a photo to choose — you can change the backdrop anytime.
           </div>
-        </div>
+        </StepShell>
       )}
 
       {step === 4 && (
-        <div style={{ padding: '60px 22px 40px' }}>
+        <StepShell
+          footer={
+            <>
+              <PrimaryButton label="Continue" onClick={next} accent={accent} />
+              <SkipButton onClick={next} />
+            </>
+          }
+        >
           <StepKicker step={4} accent={accent} title="How do your nights usually run?" sub="This gives your first two weeks a head start. The ring will refine it from real nights." />
           <div style={{ padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.06)', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -253,7 +312,7 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
             />
           </div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginBottom: 8 }}>Weekends are…</div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             {(
               [
                 ['same', 'about the same'],
@@ -278,12 +337,18 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
               </div>
             ))}
           </div>
-          <PrimaryButton label="Continue" onClick={next} accent={accent} />
-        </div>
+        </StepShell>
       )}
 
       {step === 5 && (
-        <div style={{ padding: '60px 22px 40px' }}>
+        <StepShell
+          footer={
+            <>
+              <PrimaryButton label="Start night one" onClick={finish} accent={accent} />
+              <SkipButton onClick={finish} label="Skip and finish" />
+            </>
+          }
+        >
           <StepKicker step={5} accent={accent} title="When should your daily summary be ready?" sub="One summary a day, at a time you choose. We never ping you outside it." />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             {(
@@ -316,11 +381,10 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
             })}
           </div>
           <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 6 }}>Quiet by default</div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
+          <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'rgba(255,255,255,0.5)' }}>
             No alerts, no red badges. The summary simply waits, glowing, until you open it.
           </div>
-          <PrimaryButton label="Start night one" onClick={() => onComplete(profile, prefs)} accent={accent} />
-        </div>
+        </StepShell>
       )}
     </div>
   );
