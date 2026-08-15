@@ -286,7 +286,7 @@ function ChecklistCard({ accent, userTags, viewed }: { accent: string; userTags:
           />
           <div
             onClick={addCustom}
-            style={{ padding: '10px 15px', borderRadius: 11, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }}
+            style={{ padding: '10px 15px', borderRadius: 11, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             Add
           </div>

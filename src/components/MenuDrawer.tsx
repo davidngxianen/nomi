@@ -239,7 +239,7 @@ function ProfileView({ accent, profile, onSave, onBack }: { accent: string; prof
           onChange={(e) => setCustomActivity(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addCustomActivity()}
         />
-        <div onClick={addCustomActivity} style={{ padding: '10px 15px', borderRadius: 11, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10' }}>
+        <div onClick={addCustomActivity} style={{ padding: '10px 15px', borderRadius: 11, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: accent, color: '#141a10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           Add
         </div>
       </div>

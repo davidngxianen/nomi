@@ -229,8 +229,10 @@ interface VitalCfg {
 export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, onToggleTag, customTag, onCustomTagChange, onAddCustomTag, selDay, onSelectDay, profile }: VitalsTabProps) {
   const days = getDays();
   const rawToday = days[selDay];
-  const windowStart = Math.max(0, selDay - 13);
-  const rawLast14 = days.slice(windowStart, selDay + 1);
+  // the 14 day window is always the trailing window from today, not from whichever day is
+  // selected — so the bar chart itself never reshuffles, only which bar reads as "selected" does
+  const windowStart = Math.max(0, TODAY_INDEX - 13);
+  const rawLast14 = days.slice(windowStart, TODAY_INDEX + 1);
   const consAvg = Math.round(rawLast14.reduce((a, d) => a + d.cons, 0) / rawLast14.length);
 
   const parsedAge = parseInt(profile.age, 10);
@@ -339,6 +341,7 @@ export default function VitalsTab({ accent, expanded, onToggleExpand, userTags, 
             today={today}
             last14={last14}
             accent={accent}
+            selDay={selDay}
             expanded={expanded === shortKey}
             onToggle={() => onToggleExpand(shortKey)}
           />
@@ -487,12 +490,13 @@ function DayTimeline({ days, selDay, onSelectDay, accent }: { days: ReturnType<t
 type AugmentedDay = ReturnType<typeof getDays>[number] & { cardio: number };
 
 function VitalCard({
-  cfg, today, last14, accent, expanded, onToggle,
+  cfg, today, last14, accent, selDay, expanded, onToggle,
 }: {
   cfg: VitalCfg;
   today: AugmentedDay;
   last14: AugmentedDay[];
   accent: string;
+  selDay: number;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -502,18 +506,18 @@ function VitalCard({
   const vals = last14.map((d) => d[cfg.key]);
   const mn = Math.min(...vals);
   const mx = Math.max(...vals);
-  const bars = last14.map((d, j) => {
+  const bars = last14.map((d) => {
     const t = mx === mn ? 0.5 : (d[cfg.key] - mn) / (mx - mn);
     const hpx = Math.round(10 + t * 42);
-    const isLast = j === last14.length - 1;
-    return { hpx, color: isLast ? accent : hexA(accent, 0.22 + t * 0.3) };
+    const isSelected = d.i === selDay;
+    return { hpx, color: isSelected ? accent : hexA(accent, 0.22 + t * 0.3) };
   });
 
   const last5 = last14.slice(-5);
-  const bedtimeRows = last5.map((d, j) => ({
+  const bedtimeRows = last5.map((d) => ({
     dow: DOW_LABELS[d.date.getDay()],
     offset: bedtimeOffset(d),
-    isLast: j === last5.length - 1,
+    isSelected: d.i === selDay,
   }));
   const bedtimeTrend = (() => {
     if (bedtimeRows.length < 2) return 'holding steady';
@@ -608,7 +612,8 @@ function VitalCard({
                           width: `${Math.min(48, 100 - row.offset)}%`,
                           height: 8,
                           borderRadius: 4,
-                          background: row.isLast ? accent : hexA(accent, 0.4),
+                          background: row.isSelected ? accent : hexA(accent, 0.4),
+                          transition: 'background .3s ease',
                         }}
                       />
                     </div>
@@ -623,7 +628,7 @@ function VitalCard({
             <>
               <div ref={barsRef} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 52, marginBottom: 14 }}>
                 {bars.map((b, i) => (
-                  <div key={i} style={{ flex: 1, height: b.hpx, borderRadius: 3, background: b.color }} />
+                  <div key={i} style={{ flex: 1, height: b.hpx, borderRadius: 3, background: b.color, transition: 'background .3s ease' }} />
                 ))}
               </div>
               <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginBottom: 14 }}>LAST 14 DAYS</div>
