@@ -8,6 +8,7 @@ import HealthTab, { type Metric, type Range } from './components/HealthTab';
 import StoryOverlay, { type StoryState } from './components/StoryOverlay';
 import MenuDrawer from './components/MenuDrawer';
 import Onboarding from './components/Onboarding';
+import SplashScreen from './components/SplashScreen';
 import { DEFAULT_ONBOARDING_PREFS, DEFAULT_PROFILE, getDays, resolveBackdrop, storySegs, TODAY_INDEX, type OnboardingPrefs, type Profile, type UserTags } from './data';
 import { ACCENT, APP_NAME } from './theme';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [onboardingPrefs, setOnboardingPrefs] = useState<OnboardingPrefs>(DEFAULT_ONBOARDING_PREFS);
   const [onboardingDone, setOnboardingDone] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fadeTicking = useRef(false);
 
@@ -254,6 +256,8 @@ export default function App() {
             onClose={onboardingDone ? () => setShowOnboarding(false) : undefined}
           />
         )}
+
+        {showSplash && <SplashScreen appName={APP_NAME} accent={ACCENT} onDone={() => setShowSplash(false)} />}
       </div>
     </div>
   );

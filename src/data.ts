@@ -324,27 +324,30 @@ export const BACKDROP_CATEGORIES: BackdropCategory[] = [
     id: 'forest',
     label: 'Forest',
     swatch: '#1c3b28',
+    image: 'forest1.jpg',
     variants: [
-      { id: 'a', label: 'bright canopy', color: '#2f5c3e' },
-      { id: 'b', label: 'deep shade', color: '#152b1c' },
+      { id: 'a', label: 'sunlit canopy', image: 'forest1.jpg' },
+      { id: 'b', label: 'wildflower glow', image: 'forest2.jpg' },
     ],
   },
   {
     id: 'desert',
     label: 'Desert',
     swatch: '#6b4226',
+    image: 'desert1.jpg',
     variants: [
-      { id: 'a', label: 'warm sand', color: '#8a5a35' },
-      { id: 'b', label: 'dusk dunes', color: '#4a2f22' },
+      { id: 'a', label: 'warm sand', image: 'desert1.jpg' },
+      { id: 'b', label: 'dusk dunes', image: 'desert2.jpg' },
     ],
   },
   {
     id: 'rainmist',
     label: 'Rain & mist',
     swatch: '#3a444a',
+    image: 'rain2.jpg',
     variants: [
-      { id: 'a', label: 'soft grey', color: '#54626a' },
-      { id: 'b', label: 'heavy mist', color: '#28323a' },
+      { id: 'a', label: 'soft green rain', image: 'rain2.jpg' },
+      { id: 'b', label: 'heavy mist', image: 'rain1.jpg' },
     ],
   },
 ];
