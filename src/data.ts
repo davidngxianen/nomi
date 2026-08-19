@@ -222,15 +222,24 @@ export function checklistItems(scope: 'day' | 'week', userTags: UserTags, viewed
   return items;
 }
 
+export type Gender = '' | 'female' | 'male' | 'other';
+
 export interface Profile {
   name: string;
   age: string;
+  gender: Gender;
   weightKg: string;
   heightCm: string;
   activities: string[];
 }
 
-export const DEFAULT_PROFILE: Profile = { name: 'Sophia', age: '', weightKg: '', heightCm: '', activities: [] };
+export const GENDER_OPTIONS: [Gender, string][] = [
+  ['female', 'Female'],
+  ['male', 'Male'],
+  ['other', 'Other'],
+];
+
+export const DEFAULT_PROFILE: Profile = { name: 'Sophia', age: '', gender: '', weightKg: '', heightCm: '', activities: [] };
 
 export const ACTIVITY_SUGGESTIONS = [
   'Running',

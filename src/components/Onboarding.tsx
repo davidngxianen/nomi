@@ -3,6 +3,7 @@ import {
   addMinutes,
   BACKDROP_CATEGORIES,
   formatTime12,
+  GENDER_OPTIONS,
   type BackdropId,
   type OnboardingPrefs,
   type Profile,
@@ -194,6 +195,33 @@ export default function Onboarding({ accent, initialProfile, initialPrefs, onCom
               <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.45)' }}>{f.hint}</div>
             </div>
           ))}
+          <div style={{ padding: '14px 16px', borderRadius: 16, background: 'rgba(255,255,255,0.06)', marginBottom: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 10 }}>Gender</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              {GENDER_OPTIONS.map(([id, label]) => (
+                <div
+                  key={id}
+                  onClick={() => setField('gender', id)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: 12,
+                    textAlign: 'center',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: profile.gender === id ? accent : 'rgba(255,255,255,0.09)',
+                    color: profile.gender === id ? '#141a10' : 'rgba(255,255,255,0.65)',
+                  }}
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.45)' }}>
+              Baseline HRV and resting heart rate differ by sex, so this sharpens what "your usual" means.
+            </div>
+          </div>
           <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'rgba(255,255,255,0.4)', textAlign: 'center', margin: '16px 0 4px' }}>
             Skip any of these — the app still works, it just starts with broader ranges.
           </div>

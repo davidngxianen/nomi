@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ACTIVITY_SUGGESTIONS, FAQ_ITEMS, MEASURED_SECTIONS, type Profile } from '../data';
+import { ACTIVITY_SUGGESTIONS, FAQ_ITEMS, GENDER_OPTIONS, MEASURED_SECTIONS, type Profile } from '../data';
 import { cardStyleClickable } from '../theme';
 
 type View = 'menu' | 'profile' | 'faq' | 'ring' | 'measured';
@@ -192,6 +192,29 @@ function ProfileView({ accent, profile, onSave, onBack }: { accent: string; prof
       </Field>
       <Field label="Age">
         <input style={inputStyle} type="number" inputMode="numeric" value={draft.age} onChange={(e) => set('age', e.target.value)} placeholder="Years" />
+      </Field>
+      <Field label="Gender">
+        <div style={{ display: 'flex', gap: 8 }}>
+          {GENDER_OPTIONS.map(([id, label]) => (
+            <div
+              key={id}
+              onClick={() => set('gender', id)}
+              style={{
+                flex: 1,
+                padding: '9px 0',
+                borderRadius: 12,
+                textAlign: 'center',
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: draft.gender === id ? accent : 'rgba(255,255,255,0.09)',
+                color: draft.gender === id ? '#141a10' : 'rgba(255,255,255,0.65)',
+              }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
       </Field>
       <div style={{ display: 'flex', gap: 10 }}>
         <div style={{ flex: 1 }}>
